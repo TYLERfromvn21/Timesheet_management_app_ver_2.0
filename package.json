@@ -1,0 +1,22 @@
+{
+  "name": "timesheet-management-app",
+  "version": "1.0.0",
+  "description": "Timesheet Management Monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json}\"",
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose down"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.1",
+  "devDependencies": {
+    "turbo": "^2.7.5"
+  }
+}

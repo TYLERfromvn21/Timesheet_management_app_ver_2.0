@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String      @id @default(cuid())
+  username      String      @unique
+  password      String
+  role          UserRole
+  departmentId  String
+  department    Department  @relation(fields: [departmentId], references: [id])
+  tasks         Task[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+
+  @@index([departmentId])
+  @@index([role])
+}
+
+model Department {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  users     User[]
+  jobCodes  JobCode[]
+  tasks     Task[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model JobCode {
+  id            String    @id @default(cuid())
+  code          String
+  description   String?
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  isActive      Boolean   @default(true)
+  tasks         Task[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@unique([departmentId, code])
+  @@index([departmentId])
+  @@index([isActive])
+}
+
+model Task {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobCodeId     String
+  jobCode       JobCode   @relation(fields: [jobCodeId], references: [id])
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+  description   String?
+  startTime     DateTime
+  endTime       DateTime
+  taskDate      DateTime  @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([userId])
+  @@index([taskDate])
+  @@unique([userId, taskDate])
+}
+
+enum UserRole {
+  ADMIN_TOTAL
+  ADMIN_DEPT
+  USER
+}

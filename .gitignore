@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+dist/
+build/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+postgres_data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
