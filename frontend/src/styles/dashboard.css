@@ -1,0 +1,70 @@
+/* frontend/src/styles/dashboard.css */
+
+.dashboard-body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* HEADER */
+.dash-header { background-color: #b22222; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: 50px; box-sizing: border-box; }
+.dash-header h1 { margin: 0; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+.user-menu { cursor: pointer; position: relative; font-weight: bold; font-size: 0.95rem; }
+.user-dropdown { position: absolute; top: 100%; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 150px; z-index: 100; color: #333; }
+.user-dropdown button { width: 100%; padding: 10px; text-align: left; background: none; border: none; cursor: pointer; color: #333; }
+.user-dropdown button:hover { background: #f0f0f0; }
+
+/* LAYOUT */
+.dash-container { flex: 1; display: flex; padding: 15px; gap: 15px; overflow: hidden; }
+.main-panel { flex: 3; background: white; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
+.admin-panel { flex: 1; background: white; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; overflow-y: auto; max-width: 350px; }
+
+/* TIMELINE */
+.date-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+.btn-nav { background: #eee; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: 500; }
+.task-list { flex: 1; overflow-y: auto; border: 1px solid #eee; position: relative; background: #fafafa; border-radius: 4px; }
+.time-slot { border-bottom: 1px solid #f0f0f0; height: 50px; position: relative; }
+.time-label { position: absolute; top: -10px; left: 5px; font-size: 11px; color: #999; }
+
+/* BUTTONS & INPUTS */
+.btn-add { background: #b22222; color: white; padding: 12px 40px; border-radius: 30px; border: none; font-size: 16px; cursor: pointer; box-shadow: 0 4px 6px rgba(178, 34, 34, 0.3); font-weight: bold; margin: 15px auto; display: block; }
+.btn-add:hover { transform: translateY(-2px); background: #a51b1b; }
+
+/* -- Yêu cầu 3: Input to hơn -- */
+.admin-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; }
+.btn-action { width: 100%; padding: 12px; background: #b22222; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+
+/* -- Yêu cầu 1: Nút Góp ý to đẹp góc trái dưới -- */
+.btn-feedback {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(245, 124, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 24px;
+    z-index: 3000;
+    transition: transform 0.2s;
+    border: 3px solid white;
+}
+.btn-feedback:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(245, 124, 0, 0.6); }
+.btn-feedback::after { content: "Báo lỗi"; position: absolute; bottom: -25px; font-size: 12px; color: #333; font-weight: bold; white-space: nowrap; }
+
+/* MODALS */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+.modal-content { background: white; width: 500px; padding: 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95rem; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+
+/* Admin Job List Item */
+.job-manage-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #f0f0f0; background: #fff; }
+.job-manage-item:hover { background: #fafafa; }
+.btn-del-job { color: white; background: #d32f2f; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+.job-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 13px; }
+.job-table th, .job-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+.selected-row { background-color: #e8f5e9; }

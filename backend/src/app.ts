@@ -8,6 +8,8 @@ import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/authRoutes';
 import departmentRoutes from './routes/departmentRoutes';
 import userRoutes from './routes/userRoutes';
+import jobCodeRoutes from './routes/jobCodeRoutes'; // <--- MỚI
+import taskRoutes from './routes/taskRoutes';       // <--- MỚI
 
 const app = express();
 export const prisma = new PrismaClient();
@@ -23,6 +25,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);         // Login, Check status, Admin Auth
 app.use('/api/departments', departmentRoutes); // Lấy danh sách phòng ban
 app.use('/api/users', userRoutes);        // Tạo user mới
+app.use('/api/job-codes', jobCodeRoutes); // <--- MỚI
+app.use('/api/tasks', taskRoutes);       // <--- MỚI
 
 // Health Check
 app.get('/api/health', async (req, res) => {

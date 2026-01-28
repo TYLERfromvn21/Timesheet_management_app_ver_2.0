@@ -37,5 +37,55 @@ export const UserController = {
       console.error(error);
       res.status(500).json({ success: false, message: 'Lỗi server khi tạo tài khoản' });
     }
+  },
+
+  getAll: async (req: Request, res: Response) => {
+    try {
+      const users = await prisma.user.findMany({
+        include: { department: true },
+        orderBy: { username: 'asc' }
+      });
+      // Map dữ liệu trả về cho gọn
+      const mappedUsers = users.map(u => ({
+        id: u.id,
+        username: u.username,
+        role: u.role === 'ADMIN_TOTAL' ? 'admin_total' : (u.role === 'ADMIN_DEPT' ? 'admin_dept' : 'user'),
+        department: u.department ? u.department.name : '-',
+        departmentId: u.departmentId // Để lọc
+      }));
+      res.json(mappedUsers);
+    } catch (error) {
+      res.status(500).json([]);
+    }
+  },
+
+  update: async (req: Request, res: Response) => {
+    try {
+      const { id, username, password } = req.body;
+      const updateData: any = { username };
+      
+      // Chỉ update password nếu có nhập
+      if (password && password.trim() !== '') {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+
+      await prisma.user.update({
+        where: { id },
+        data: updateData
+      });
+      res.json({ message: 'Cập nhật tài khoản thành công' });
+    } catch (error) {
+      res.status(500).json({ error: 'Lỗi cập nhật tài khoản' });
+    }
+  },
+
+  delete: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.body;
+      await prisma.user.delete({ where: { id } });
+      res.json({ message: 'Đã xóa tài khoản' });
+    } catch (error) {
+      res.status(500).json({ error: 'Lỗi xóa tài khoản' });
+    }
   }
 };

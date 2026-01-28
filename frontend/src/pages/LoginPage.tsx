@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/auth.css'; // Import giao diện đã tạo ở bước 1
+import { useNavigate } from 'react-router-dom';
+import '../styles/auth.css'; 
 
 export default function LoginPage() {
     // --- 1. KHAI BÁO STATE (Biến lưu trữ dữ liệu) ---
     // State lưu username và password người dùng nhập
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
         password: ''
@@ -68,7 +70,7 @@ export default function LoginPage() {
 
                 // TODO: Chuyển hướng vào trang Dashboard sau 1 giây
                 setTimeout(() => {
-                    alert('Login thành công! (Sau này sẽ chuyển trang tại đây)');
+                    navigate('/dashboard');
                 }, 1000);
             } else {
                 // Đăng nhập thất bại (Sai pass/user)

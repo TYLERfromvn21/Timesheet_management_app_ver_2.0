@@ -1,44 +1,56 @@
-import { PrismaClient } from '@prisma/client'
-import * as bcrypt from 'bcryptjs'
+// backend/prisma/seed.ts
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Start seeding...')
+  console.log('🌱 Start seeding...');
 
-  // 1. Tạo Phòng ban mẫu (IT)
-  const devDept = await prisma.department.upsert({
-    where: { code: 'IT' },
-    update: {},
-    create: {
-      code: 'IT',
-      name: 'Information Technology',
-    },
-  })
-  console.log('✅ Created Department: IT')
+  // 1. Tạo danh sách phòng ban
+  const departments = [
+    { name: 'Kế toán', code: 'KE_TOAN' },
+    { name: 'Kiểm toán Báo cáo Tài chính', code: 'KIEM_TOAN_BCTC' },
+    { name: 'Kiểm toán XDCB', code: 'KIEM_TOAN_XDCB' },
+    { name: 'Thẩm định giá, Tư vấn thuế', code: 'THAM_DINH_GIA' },
+    { name: 'Khác', code: 'KHAC' } // Phòng này dùng để chứa Admin tổng hoặc user vãng lai
+  ];
 
-  // 2. Tạo tài khoản Admin (Pass: admin123)
-  const hashedPassword = await bcrypt.hash('admin123', 10)
+  // Chạy vòng lặp tạo từng phòng
+  for (const dept of departments) {
+    await prisma.department.upsert({
+      where: { code: dept.code },
+      update: { name: dept.name },
+      create: dept,
+    });
+  }
+  console.log('✅ Created Default Departments');
+
+  // 2. Tạo Admin Tổng
+  const hashedPassword = await bcrypt.hash('admin123', 10);
   
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { username: 'admin' },
     update: {},
     create: {
       username: 'admin',
       password: hashedPassword,
       role: 'ADMIN_TOTAL',
-      departmentId: devDept.id,
+      // 👇 SỬA LẠI ĐOẠN NÀY: Kết nối Admin vào phòng "KHAC" thay vì để rỗng
+      department: {
+        connect: { code: 'KHAC' }
+      }
     },
-  })
-  console.log('✅ Created Admin User: admin / admin123')
+  });
+  
+  console.log('✅ Created Admin User: admin / admin123');
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
   })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
