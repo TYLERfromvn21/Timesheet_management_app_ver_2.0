@@ -4,12 +4,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
 
-// Import các Routes (Đảm bảo bạn đã tạo các file này ở bước trước)
 import authRoutes from './routes/authRoutes';
 import departmentRoutes from './routes/departmentRoutes';
 import userRoutes from './routes/userRoutes';
-import jobCodeRoutes from './routes/jobCodeRoutes'; // <--- MỚI
-import taskRoutes from './routes/taskRoutes';       // <--- MỚI
+import jobCodeRoutes from './routes/jobCodeRoutes'; 
+import taskRoutes from './routes/taskRoutes';       
+import reportRoutes from './routes/reportRoutes';
 
 const app = express();
 export const prisma = new PrismaClient();
@@ -21,14 +21,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// --- ĐĂNG KÝ ROUTES ---
-app.use('/api/auth', authRoutes);         // Login, Check status, Admin Auth
-app.use('/api/departments', departmentRoutes); // Lấy danh sách phòng ban
-app.use('/api/users', userRoutes);        // Tạo user mới
-app.use('/api/job-codes', jobCodeRoutes); // <--- MỚI
-app.use('/api/tasks', taskRoutes);       // <--- MỚI
 
-// Health Check
+app.use('/api/auth', authRoutes);         // Login, Check status, Admin Auth
+app.use('/api/departments', departmentRoutes); 
+app.use('/api/users', userRoutes);        
+app.use('/api/job-codes', jobCodeRoutes); 
+app.use('/api/tasks', taskRoutes);      
+app.use('/api/reports', reportRoutes);
+
 app.get('/api/health', async (req, res) => {
     try {
         await prisma.$queryRaw`SELECT 1`;

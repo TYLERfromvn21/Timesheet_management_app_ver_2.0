@@ -53,6 +53,7 @@ model Task {
   endTime         DateTime
   date            DateTime // Ngày làm việc
   createdAt       DateTime @default(now())
+  userId          String
 }
 
 // --- 3. Enums ---
