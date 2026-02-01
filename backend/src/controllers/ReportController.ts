@@ -172,8 +172,7 @@ export const ReportController = {
 
       // Xuất file
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=BAOCAO_USER_${user.username}_${month}_${year}.xlsx`);
-      await workbook.xlsx.write(res);
+      res.setHeader('Content-Disposition', `attachment; filename=BAOCAO_NHANVIEN_${user.username.toUpperCase()}_THANG_${month}_NAM_${year}.xlsx`);      await workbook.xlsx.write(res);
       res.end();
 
     } catch (error) {
@@ -222,31 +221,31 @@ export const ReportController = {
       const colors = ['FFB22222', 'FF2E8B57', 'FF4169E1', 'FFDAA520', 'FF8E44AD', 'FFF39C12'];
 
       // Helper: Xử lý dữ liệu (Group by Job Code)
-      const processData = (filterDeptCode: string | null) => {
-          const map: any = {};
-          tasks.forEach(t => {
-              if (filterDeptCode && t.department !== filterDeptCode) return;
-              
-              const key = t.jobCode;
-              const staticDesc = jobMap.get(`${t.department}_${t.jobCode}`) || '';
-              const duration = t.endTime.getTime() - t.startTime.getTime();
-              const userName = userMap.get(t.userId) || 'Unknown';
+const processData = (filterDeptId: string | null) => {
+    const map: any = {};
+    tasks.forEach(t => {
+        // ✅ FIX: Compare ID with ID
+        if (filterDeptId && t.department !== filterDeptId) return;
+        
+        const key = t.jobCode;
+        const staticDesc = jobMap.get(`${t.department}_${t.jobCode}`) || '';
+        const duration = t.endTime.getTime() - t.startTime.getTime();
+        const userName = userMap.get(t.userId) || 'Unknown';
 
-              if (!map[key]) {
-                  map[key] = {
-                      code: t.jobCode,
-                      desc: staticDesc,
-                      dept: t.department, // Có thể là mã phòng hoặc tên
-                      totalTime: 0,
-                      users: new Set()
-                  };
-              }
-              map[key].totalTime += duration;
-              map[key].users.add(userName);
-          });
-          // Chuyển map thành array và sort theo code
-          return Object.values(map).sort((a:any, b:any) => a.code.localeCompare(b.code));
-      };
+        if (!map[key]) {
+            map[key] = {
+                code: t.jobCode,
+                desc: staticDesc,
+                dept: t.department, // This is an ID
+                totalTime: 0,
+                users: new Set()
+            };
+        }
+        map[key].totalTime += duration;
+        map[key].users.add(userName);
+    });
+    return Object.values(map).sort((a:any, b:any) => a.code.localeCompare(b.code));
+};
 
       // Helper: Vẽ bảng lên Excel
       const drawTable = (title: string, data: any[], color: string, showDeptCol = false) => {
@@ -275,9 +274,8 @@ export const ReportController = {
                   const r = summarySheet.getRow(currentRow++);
                   const vals = [item.code, item.desc, item.users.size, (item.totalTime / 3600000).toFixed(2)];
                   if (showDeptCol) {
-                      // Tìm tên phòng ban để hiển thị đẹp hơn
-                      const dName = depts.find(d => d.code === item.dept)?.name || item.dept;
-                      vals.splice(2, 0, dName);
+    const dName = depts.find(d => d.id === item.dept)?.name || item.dept;
+    vals.splice(2, 0, dName);
                   }
                   r.values = vals;
                   r.getCell(2).alignment = { wrapText: true };
@@ -297,11 +295,11 @@ export const ReportController = {
       // 2. Các bảng con theo từng phòng ban
       let tableIndex = 2;
       depts.forEach((d, idx) => {
-          const color = colors[idx % colors.length]; // Xoay vòng màu
-          const deptData = processData(d.code);
-          drawTable(`${tableIndex}. PHÒNG ${d.name}`, deptData, color, false);
-          tableIndex++;
-      });
+    const color = colors[idx % colors.length];
+    const deptData = processData(d.id); // ✅ Pass ID
+    drawTable(`${tableIndex}. PHÒNG ${d.name}`, deptData, color, false);
+    tableIndex++;
+});
 
       // --- BƯỚC TẠO SHEET CHI TIẾT (Detail Sheets) ---
       // Mỗi phòng ban 1 Sheet riêng
@@ -323,7 +321,8 @@ export const ReportController = {
           r1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
           
           // Lọc task của phòng này
-          const deptTasks = tasks.filter(t => t.department === d.code);
+          //const deptTasks = tasks.filter(t => t.department === d.code);
+const deptTasks = tasks.filter(t => t.department === d.id);
           
           // Group by Job + User (Để biết: Job A do ông B làm bao nhiêu tiếng)
           const detailMap: any = {}; 
@@ -352,8 +351,7 @@ export const ReportController = {
 
       // Xuất file
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=BAOCAO_JOB_${month}_${year}.xlsx`);
-      await workbook.xlsx.write(res);
+      res.setHeader('Content-Disposition', `attachment; filename=BAOCAO_JOBCODE_THANG_${month}_NAM_${year}.xlsx`);      await workbook.xlsx.write(res);
       res.end();
 
     } catch (error) {
