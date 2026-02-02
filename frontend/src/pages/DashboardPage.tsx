@@ -4,7 +4,7 @@ import '../styles/dashboard.css';
 
 // Types
 interface User { id: string; username: string; role: string; department: string; departmentId?: string; }
-interface Task { id: string; job_code: string; task_description: string; start_time: string; end_time: string; }
+interface Task { id: string; job_code: string; task_description: string; start_time: string; end_time: string;     userId?: string;  createdBy?: string;  }
 interface Job { id: string; job_code: string; task_description: string; }
 interface Department { id: string; code: string; name: string; }
 
@@ -78,14 +78,29 @@ export default function DashboardPage() {
     useEffect(() => { if (user) loadTasks(); }, [currentDate, user]);
 
     // --- API CALLS ---
-    const loadTasks = async () => {
-        const dateStr = getLocalISODate(currentDate);
-        try {
-            const res = await fetch(`http://localhost:3000/api/tasks/${dateStr}`);
-            const data = await res.json();
-            setTasks(data);
-        } catch(e) {}
-    };
+const loadTasks = async () => {
+    const dateStr = getLocalISODate(currentDate);
+    try {
+        const token = localStorage.getItem('token');  // ✅ Get token
+        const res = await fetch(`http://localhost:3000/api/tasks/${dateStr}`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`  // ✅ Send token
+            }
+        });
+        
+        if (!res.ok) {
+            console.error('Failed to load tasks');
+            setTasks([]);
+            return;
+        }
+        
+        const data = await res.json();
+        setTasks(data);
+    } catch(e) {
+        console.error('Error loading tasks:', e);
+        setTasks([]);
+    }
+};
 
     const loadDepartments = async () => {
         try {
@@ -115,23 +130,47 @@ export default function DashboardPage() {
         const slots = []; for (let i = 6; i <= 22; i++) slots.push(<div key={i} className="time-slot"><span className="time-label">{i}:00</span></div>); return slots;
     };
 
+    // --- PHẦN ĐÃ SỬA: RENDER TASKS AN TOÀN HƠN ---
     const renderTasksOnTimeline = () => {
         return tasks.map(t => {
-            const s = new Date(t.start_time), e = new Date(t.end_time);
-            const startPos = (s.getHours() - 6) + s.getMinutes()/60;
-            const duration = (e.getTime() - s.getTime()) / 3600000;
-            
-            // Format giờ hiển thị (VD: 08:00 - 10:00)
-            const timeRangeText = `${s.toTimeString().substr(0,5)} - ${e.toTimeString().substr(0,5)}`;
+            // Kiểm tra dữ liệu an toàn
+            if (!t.start_time || !t.end_time) return null;
 
-            if (startPos < 0) return null;
+            const s = new Date(t.start_time);
+            const e = new Date(t.end_time);
+
+            // Bỏ qua nếu ngày tháng bị lỗi
+            if (isNaN(s.getTime()) || isNaN(e.getTime())) return null;
+
+            const startHour = s.getHours();
+            const startPos = (startHour - 6) + s.getMinutes() / 60;
+            const duration = (e.getTime() - s.getTime()) / 3600000;
+
+            // Hàm format giờ HH:mm thủ công để tránh lỗi
+            const formatTime = (date: Date) => {
+                const h = date.getHours().toString().padStart(2, '0');
+                const m = date.getMinutes().toString().padStart(2, '0');
+                return `${h}:${m}`;
+            };
+            const timeRangeText = `${formatTime(s)} - ${formatTime(e)}`;
+
+            // Xử lý hiển thị nếu task nằm ngoài khung giờ
+            if (startPos + duration < 0) return null; 
+
+            // Tính toán vị trí hiển thị (xử lý trường hợp tràn lên trên)
+            const displayTop = startPos < 0 ? 0 : startPos * 50;
+            const realDuration = startPos < 0 ? duration + startPos : duration;
+            const displayHeight = realDuration * 50;
+
+            if (displayHeight <= 0) return null;
+
             return (
                 <div key={t.id} onClick={() => openTaskModal(t)} 
                     style={{
                         position: 'absolute', 
                         left: '60px', right: '10px', 
-                        top: `${startPos * 50}px`, 
-                        height: `${duration * 50}px`, 
+                        top: `${displayTop}px`, 
+                        height: `${displayHeight}px`, 
                         background: '#ffebeb', 
                         borderLeft: '4px solid #b22222', 
                         padding: '2px 8px', fontSize: '11px', cursor: 'pointer', 
@@ -139,9 +178,8 @@ export default function DashboardPage() {
                         boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                         display: 'flex', flexDirection: 'column', justifyContent: 'center'
                     }}>
-                    {/* 👇 ĐÃ THÊM: Hiển thị Mã Job + Giờ làm việc */}
                     <div style={{fontWeight:'bold', color:'#b22222'}}>
-                        {t.job_code} <span style={{color:'#666', fontWeight:'normal'}}>({timeRangeText})</span>
+                        {t.job_code || 'No Code'} <span style={{color:'#555', fontWeight:'normal'}}>({timeRangeText})</span>
                     </div>
                     <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
                         {t.task_description}
@@ -159,7 +197,7 @@ export default function DashboardPage() {
             defaultDept = departments[0].id;
         }
 
-        // --- HINT BOX: Logic lấy danh sách job trong ngày ---
+        // Hint Box: Logic lấy danh sách job trong ngày
         if (tasks.length > 0) {
             const uniqueJobs = Array.from(new Set(tasks.map(t => t.job_code)));
             setTodayJobHistory(uniqueJobs.join(', '));
@@ -170,9 +208,16 @@ export default function DashboardPage() {
         if (task) {
             setCurrentTaskId(task.id);
             const taskDept = task.department || defaultDept;
+            // Parse time safely
+            let sTime = '08:00', eTime = '17:00';
+            try {
+                sTime = new Date(task.start_time).toTimeString().substr(0,5);
+                eTime = new Date(task.end_time).toTimeString().substr(0,5);
+            } catch(e) { console.error("Time parse error", e); }
+
             setTaskFormData({ 
                 department: taskDept, job_code: task.job_code, description: task.task_description, 
-                start: new Date(task.start_time).toTimeString().substr(0,5), end: new Date(task.end_time).toTimeString().substr(0,5) 
+                start: sTime, end: eTime 
             });
             setSelectedJob(task.job_code); 
             loadJobsByDept(taskDept, 'USER');
@@ -190,26 +235,55 @@ export default function DashboardPage() {
         loadJobsByDept(newDeptVal, 'USER');
     }
 
-    const handleSaveTask = async () => {
-        if (!selectedJob) return alert("Chưa chọn Job!");
-        const sVal = taskFormData.start.split(':'), eVal = taskFormData.end.split(':');
-        const dS = new Date(currentDate); dS.setHours(parseInt(sVal[0]), parseInt(sVal[1]));
-        const dE = new Date(currentDate); dE.setHours(parseInt(eVal[0]), parseInt(eVal[1]));
-        if(dS >= dE) return alert("Giờ kết thúc phải lớn hơn bắt đầu");
+const handleSaveTask = async () => {
+    if (!selectedJob) return alert("Chưa chọn Job!");
+    
+    const sVal = taskFormData.start.split(':');
+    const eVal = taskFormData.end.split(':');
+    
+    const dS = new Date(currentDate); 
+    dS.setHours(parseInt(sVal[0]), parseInt(sVal[1]), 0, 0);
+    
+    const dE = new Date(currentDate); 
+    dE.setHours(parseInt(eVal[0]), parseInt(eVal[1]), 0, 0);
+    
+    if(dS >= dE) return alert("Giờ kết thúc phải lớn hơn bắt đầu");
 
-        const payload = { 
-            task_id: currentTaskId, 
-            department: taskFormData.department, 
-            job_code: selectedJob, 
-            task_description: taskFormData.description, 
-            start_time: dS.getTime(), 
-            end_time: dE.getTime(), 
-            date: getLocalISODate(currentDate) 
-        };
-        await fetch('http://localhost:3000/api/tasks/save', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-        setModalTaskOpen(false); 
-        loadTasks();
+    const payload = { 
+        task_id: currentTaskId, 
+        department: taskFormData.department, 
+        job_code: selectedJob, 
+        task_description: taskFormData.description, 
+        start_time: dS.toISOString(),  // ✅ FIX: Use ISO string
+        end_time: dE.toISOString(),    // ✅ FIX: Use ISO string
+        date: getLocalISODate(currentDate) 
     };
+
+    const token = localStorage.getItem('token');  // ✅ FIX: Get token
+    
+    try {
+        const response = await fetch('http://localhost:3000/api/tasks/save', { 
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`  // ✅ FIX: Add auth header
+            }, 
+            body: JSON.stringify(payload) 
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error.error || 'Lỗi lưu task');
+            return;
+        }
+        
+        setModalTaskOpen(false); 
+        await loadTasks();  // ✅ FIX: Wait for reload
+    } catch (error) {
+        console.error('Save error:', error);
+        alert('Lỗi kết nối server');
+    }
+};
 
     const handleDeleteTask = async () => {
         if (!currentTaskId || !confirm("Xóa task này?")) return;
@@ -325,13 +399,15 @@ export default function DashboardPage() {
                                 ))}
                             </div>
                         </div>
-                        <div className="report-control">
-                            <label><strong>XUẤT BÁO CÁO</strong></label>
-                            <div style={{display:'flex', gap:'5px'}}>
-                                <button className="btn-action" style={{background:'#2ecc71'}} onClick={() => openReportModal('USER')}>Theo NV</button>
-                                <button className="btn-action" style={{background:'#3498db'}} onClick={() => openReportModal('JOB')}>Theo Job</button>
-                            </div>
-                        </div>
+{isTotalAdmin && (
+    <div className="report-control">
+        <label><strong>XUẤT BÁO CÁO</strong></label>
+        <div style={{display:'flex', gap:'5px'}}>
+            <button className="btn-action" style={{background:'#2ecc71'}} onClick={() => openReportModal('USER')}>Theo NV</button>
+            <button className="btn-action" style={{background:'#3498db'}} onClick={() => openReportModal('JOB')}>Theo Job</button>
+        </div>
+    </div>
+)}
                         <div className="report-control">
                             <label><strong>HỆ THỐNG</strong></label>
                             <button className="btn-action" style={{background:'#8e44ad', marginBottom:'5px'}} onClick={() => navigate('/admin/users')}>Quản lý Tài khoản</button>

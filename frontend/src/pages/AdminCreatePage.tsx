@@ -2,41 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin-create.css';
 
-interface Department {
-    id: string;
-    code: string;
-    name: string;
-}
+interface Department { id: string; code: string; name: string; }
 
 export default function AdminCreatePage() {
     const navigate = useNavigate();
-    const [pageTitle, setPageTitle] = useState("KHỞI TẠO ADMIN TỔNG");
+    const [pageTitle, setPageTitle] = useState("TẠO TÀI KHOẢN MỚI");
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
     const [departments, setDepartments] = useState<Department[]>([]);
     
-    // Form State
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        role: 'admin_total', // Default cho First Run
-        departmentId: ''
-    });
+    // --- CHECK FLOW ---
+    const isFlow1 = localStorage.getItem('tempAuth') === 'true';
 
-    // User State (người đang thực hiện tạo)
+    const [formData, setFormData] = useState({
+        username: '', password: '', role: 'admin_total', departmentId: ''
+    });
+    
+    // User State for role-based form adjustments
     const [currentUser, setCurrentUser] = useState<any>(null);
 
-    // --- 1. Load Data lúc vào trang (Giống window.onload) ---
+    // --- 1. Load Data ---
     useEffect(() => {
+        if (isFlow1) setPageTitle("KHỞI TẠO TÀI KHOẢN (Admin Login)");
+
         const init = async () => {
-            // Load danh sách phòng ban trước
+            // Load Departments
             try {
                 const deptRes = await fetch('http://localhost:3000/api/departments');
-                const deptData = await deptRes.json();
-                setDepartments(deptData);
-            } catch (e) { console.error(e); }
+                setDepartments(await deptRes.json());
+            } catch (e) {}
 
-            // Gọi API /me để check user info (thay vì fetch /user-info cũ)
+            // Check Auth
             const token = localStorage.getItem('token');
+            if (!token) { navigate('/login'); return; }
+
             try {
                 const res = await fetch('http://localhost:3000/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -46,39 +44,30 @@ export default function AdminCreatePage() {
                     const user = await res.json();
                     setCurrentUser(user);
 
-                    // CASE 1: Đã đăng nhập (Admin creating users)
-                    setPageTitle("TẠO TÀI KHOẢN MỚI");
-                    
-                    // Logic khóa quyền Admin Dept
+                    // basic form setup
                     if (user.role === 'admin_dept') {
                         setFormData(prev => ({ 
                             ...prev, 
-                            role: 'user', // Chỉ được tạo user
-                            departmentId: user.department // Khóa vào phòng của họ
+                            role: 'user', 
+                            departmentId: user.department 
                         }));
                     } else {
-                        // Admin Tổng thì mặc định chọn
                         setFormData(prev => ({ ...prev, role: 'admin_total' }));
                     }
-
                 } else {
-                    // CASE 2: Chưa đăng nhập (First Run / Token lỗi)
-                    // Logic cũ: Restricts creation to 'Total Admin' only
-                    setFormData(prev => ({ ...prev, role: 'admin_total' }));
+                    navigate('/login');
                 }
             } catch (err) {
-                // Lỗi mạng -> Cũng coi như First Run
-                setFormData(prev => ({ ...prev, role: 'admin_total' }));
+                navigate('/login');
             }
         };
         init();
-    }, []);
+    }, [navigate, isFlow1]);
 
-    // --- 2. Logic Toggle Department (Ẩn hiện phòng ban) ---
     const showDept = formData.role !== 'admin_total';
     const isDeptLocked = currentUser?.role === 'admin_dept';
 
-    // --- 3. Handle Submit ---
+    // --- 2. Handle Submit & Navigate ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage(null);
@@ -94,7 +83,15 @@ export default function AdminCreatePage() {
             if (res.ok) {
                 setMessage({ type: 'success', text: 'Tạo tài khoản thành công!' });
                 setFormData(prev => ({ ...prev, username: '', password: '' })); // Reset form
-                navigate('/admin-auth');
+                setTimeout(() => {
+                    if (isFlow1) {
+                        localStorage.clear(); // delete token admin
+                        navigate('/login');
+                    } else {
+                        navigate('/admin/users');
+                    }
+                }, 1500);
+                
             } else {
                 setMessage({ type: 'error', text: data.message || 'Lỗi tạo tài khoản' });
             }
@@ -108,44 +105,28 @@ export default function AdminCreatePage() {
             <div className="create-card">
                 <h1 className="create-h1">{pageTitle}</h1>
                 
-                {message && (
-                    <span className={message.type === 'error' ? 'msg-error' : 'msg-success'}>
-                        {message.text}
-                    </span>
-                )}
+                {message && <span className={message.type === 'error' ? 'msg-error' : 'msg-success'}>{message.text}</span>}
                 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Tên đăng nhập</label>
-                        <input 
-                            type="text" required placeholder="VD: admin"
-                            value={formData.username}
-                            onChange={e => setFormData({...formData, username: e.target.value})}
-                        />
+                        <input type="text" required value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} />
                     </div>
                     <div className="form-group">
                         <label>Mật khẩu</label>
-                        <input 
-                            type="password" required placeholder="******"
-                            value={formData.password}
-                            onChange={e => setFormData({...formData, password: e.target.value})}
-                        />
+                        <input type="password" required value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
                     </div>
                     
                     <div className="form-group">
                         <label>Loại tài khoản</label>
-                        <select 
-                            value={formData.role}
-                            onChange={e => setFormData({...formData, role: e.target.value})}
-                        >
-                            {/* Logic hiển thị option dựa trên quyền */}
+                        <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
                             {!currentUser ? (
                                 <option value="admin_total">Admin Tổng (First Run)</option>
                             ) : currentUser.role === 'admin_dept' ? (
                                 <option value="user">Nhân viên</option>
                             ) : (
                                 <>
-                                    <option value="admin_total">Admin Tổng (Quản trị viên)</option>
+                                    <option value="admin_total">Admin Tổng</option>
                                     <option value="admin_dept">Quản lý Phòng ban</option>
                                     <option value="user">Nhân viên</option>
                                 </>
@@ -173,11 +154,18 @@ export default function AdminCreatePage() {
                     <button type="submit" className="create-btn">Tạo Tài Khoản</button>
                 </form>
                 
-                {currentUser && (
-                    <div className="note">
-                        <a href="/login" style={{color:'#b22222', textDecoration:'none'}}>Quay lại Đăng nhập</a>
-                    </div>
-                )}
+                {/* --- FOOTER LINKS --- */}
+                <div className="note" style={{marginTop:'20px', borderTop:'1px solid #eee', paddingTop:'10px'}}>
+                    {isFlow1 ? (
+                        <a onClick={() => { localStorage.clear(); navigate('/login'); }} style={{color:'#666', cursor:'pointer'}}>
+                            ← Hủy & Quay lại Đăng nhập
+                        </a>
+                    ) : (
+                        <a onClick={() => navigate('/admin/users')} style={{color:'#b22222', cursor:'pointer'}}>
+                            ← Quay lại Quản lý tài khoản
+                        </a>
+                    )}
+                </div>
             </div>
         </div>
     );

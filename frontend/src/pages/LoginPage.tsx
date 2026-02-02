@@ -60,19 +60,20 @@ export default function LoginPage() {
 
             const data = await res.json();
 
-            if (res.ok) {
-                // Đăng nhập thành công
-                setMessage({ type: 'success', text: 'Đăng nhập thành công! Đang chuyển hướng...' });
-                
-                // Lưu token vào bộ nhớ trình duyệt
-                localStorage.setItem('token', data.data.token);
-                localStorage.setItem('user', JSON.stringify(data.data.user));
+            // LoginPage.tsx - handleLogin function (around line 57)
+if (res.ok) {
+    setMessage({ type: 'success', text: 'Đăng nhập thành công! Đang chuyển hướng...' });
+    
+    localStorage.setItem('token', data.data.token);
+    localStorage.setItem('user', JSON.stringify(data.data.user));
+    
+    // ✅ Clear tempAuth flag if it exists (in case user was in Flow 1)
+    localStorage.removeItem('tempAuth');
 
-                // TODO: Chuyển hướng vào trang Dashboard sau 1 giây
-                setTimeout(() => {
-                    navigate('/dashboard');
-                }, 1000);
-            } else {
+    setTimeout(() => {
+        navigate('/dashboard');
+    }, 1000);
+} else {
                 // Đăng nhập thất bại (Sai pass/user)
                 setMessage({ type: 'error', text: data.message || 'Đăng nhập thất bại' });
             }

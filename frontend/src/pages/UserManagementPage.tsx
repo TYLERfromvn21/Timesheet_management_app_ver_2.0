@@ -16,23 +16,45 @@ export default function UserManagementPage() {
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
-        const init = async () => {
-            const token = localStorage.getItem('token');
-            if(!token) return navigate('/login');
+    const init = async () => {
+        const token = localStorage.getItem('token');
+        
+        // SECURITY: No token → Immediate redirect
+        if (!token) {
+            console.log('UserManagementPage: No token, redirecting to login');
+            navigate('/login', { replace: true });
+            return;
+        }
 
-            try {
-                const resMe = await fetch('http://localhost:3000/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if(resMe.ok) {
-                    const user = await resMe.json();
-                    setCurrentUser(user);
-                    loadData();
-                } else navigate('/login');
-            } catch(e) { navigate('/login'); }
-        };
-        init();
-    }, []);
+        try {
+            const resMe = await fetch('http://localhost:3000/api/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (resMe.ok) {
+                const user = await resMe.json();
+                setCurrentUser(user);
+                
+                //CHECK: Only admins can access this page
+                if (user.role !== 'admin_total' && user.role !== 'admin_dept') {
+                    console.log('User is not admin, access denied');
+                    navigate('/dashboard', { replace: true });
+                    return;
+                }
+                
+                loadData();
+            } else {
+                console.log('Invalid token, redirecting to login');
+                localStorage.removeItem('token'); // Clean up invalid token
+                navigate('/login', { replace: true });
+            }
+        } catch (e) {
+            console.error('Auth error:', e);
+            navigate('/login', { replace: true });
+        }
+    };
+    init();
+    }, [navigate]);
 
     const loadData = async () => {
         const resDept = await fetch('http://localhost:3000/api/departments');
@@ -81,8 +103,12 @@ export default function UserManagementPage() {
                 <button onClick={() => navigate('/dashboard')} className="btn-action" style={{width: 'auto', marginBottom: '15px', display: 'inline-block'}}>← Quay lại Dashboard</button>
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                     <h1 style={{color: '#b22222', margin: 0}}>QUẢN LÝ TÀI KHOẢN</h1>
-                    <button onClick={() => navigate('/admin-create')} className="btn-action" style={{width: 'auto', background:'#2ecc71'}}>+ Tạo mới</button>
-                </div>
+                <button onClick={() => {
+                            localStorage.removeItem('tempAuth'); 
+                            navigate('/admin-create');
+                        }} 
+                        className="btn-action" 
+                        style={{width: 'auto', background:'#2ecc71'}}>+ Tạo mới</button></div>
 
                 {/* Chỉ Admin Tổng mới thấy bộ lọc */}
                 {currentUser?.role === 'admin_total' && (

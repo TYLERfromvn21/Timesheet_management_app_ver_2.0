@@ -13,7 +13,6 @@ export default function AdminAuthPage() {
         setErrorMsg('');
 
         try {
-            // Gọi API admin-login mới tạo
             const res = await fetch('http://localhost:3000/api/auth/admin-login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -22,9 +21,13 @@ export default function AdminAuthPage() {
             const data = await res.json();
 
             if (res.ok) {
-                // Lưu token để trang sau dùng
+                // delete old tokens
+                localStorage.clear();
+
+                // save new token
                 localStorage.setItem('token', data.data.token);
-                // Chuyển hướng sang trang Tạo tài khoản
+                localStorage.setItem('tempAuth', 'true');
+                
                 navigate('/admin-create'); 
             } else {
                 setErrorMsg(data.error || 'Đăng nhập thất bại');
@@ -44,26 +47,17 @@ export default function AdminAuthPage() {
                 
                 <form onSubmit={handleSubmit}>
                     <input 
-                        type="text" 
-                        className="auth-input"
-                        placeholder="Tên đăng nhập Admin" 
-                        required 
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        type="text" className="auth-input" placeholder="Tên đăng nhập Admin" required 
+                        value={username} onChange={(e) => setUsername(e.target.value)}
                     />
                     <input 
-                        type="password" 
-                        className="auth-input"
-                        placeholder="Mật khẩu" 
-                        required 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        type="password" className="auth-input" placeholder="Mật khẩu" required 
+                        value={password} onChange={(e) => setPassword(e.target.value)}
                     />
                     <button type="submit" className="auth-btn">Xác nhận</button>
                 </form>
                 
                 {errorMsg && <div className="auth-error">{errorMsg}</div>}
-                
                 <a href="/login" className="auth-back-link">← Quay lại trang chủ</a>
             </div>
         </div>
