@@ -1,9 +1,12 @@
 // backend/src/app.ts
+// this file sets up the Express application with middleware and routes
+// and exports the app for use in the server entry point.
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
 
+// import route handlers
 import authRoutes from './routes/authRoutes';
 import departmentRoutes from './routes/departmentRoutes';
 import userRoutes from './routes/userRoutes';
@@ -14,6 +17,7 @@ import reportRoutes from './routes/reportRoutes';
 const app = express();
 export const prisma = new PrismaClient();
 
+// Middleware setup
 app.use(helmet());
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -21,7 +25,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
+// Route setup for different API endpoints
 app.use('/api/auth', authRoutes);         // Login, Check status, Admin Auth
 app.use('/api/departments', departmentRoutes); 
 app.use('/api/users', userRoutes);        

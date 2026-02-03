@@ -1,9 +1,14 @@
+// backend/src/controllers/AuthController.ts
+// this file handles authentication-related requests
+// and includes a new function to check system status for setup mode
 import { Request, Response } from 'express';
 import { AuthService } from '../services/AuthService';
 import { prisma } from '../app';
-import { verifyToken } from '../utils/jwt'; // Nhớ import hàm này
+import { verifyToken } from '../utils/jwt'; 
 
+// Controller for authentication-related operations
 export const AuthController = {
+  //function for user login
   login: async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
@@ -14,26 +19,27 @@ export const AuthController = {
     }
   },
 
-  // --- HÀM MỚI: Check System Status ---
+  //function to  check if system is in setup mode
   checkSystemStatus: async (req: Request, res: Response) => {
     try {
-      // Đếm số lượng Admin Tổng trong hệ thống
+      //count number of admin users in the database
       const adminCount = await prisma.user.count({
         where: { role: 'ADMIN_TOTAL' }
       });
-      // Nếu chưa có ai -> Mode Setup (isSetupMode = true)
+      // if no admin users exist, system is in setup mode
       res.json({ isSetupMode: adminCount === 0 });
     } catch (error) {
       res.status(500).json({ isSetupMode: false, error: 'DB Error' });
     }
   },
 
+  //function for admin login with role check
   adminLogin: async (req: Request, res: Response) => {
     try {
       const { username, password } = req.body;
       const result = await AuthService.login(username, password);
       
-      // Kiểm tra xem có phải Admin không (Logic riêng của trang này)
+      // check if user has admin role
       if (result.user.role !== 'ADMIN_TOTAL' && result.user.role !== 'ADMIN_DEPT') {
           return res.status(403).json({ error: 'Bạn không có quyền truy cập trang này!' });
       }
@@ -44,10 +50,10 @@ export const AuthController = {
     }
   },
 
-  // 2. API lấy thông tin người dùng hiện tại (Thay cho /user-info cũ)
+  // function to get current user info based on token
   me: async (req: Request, res: Response) => {
     try {
-        // Lấy token từ header Authorization: "Bearer <token>"
+        // take token from authorization header
         const token = req.headers.authorization?.split(' ')[1];
         if (!token) return res.status(401).json({ error: 'No token provided' });
 
@@ -56,16 +62,16 @@ export const AuthController = {
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.id },
-            include: { department: true } // Lấy cả tên phòng ban nếu cần
+            include: { department: true } 
         });
 
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Trả về định dạng khớp với logic cũ để frontend dễ xử lý
+        // return user info with role and department ID
         res.json({
             username: user.username,
             role: user.role === 'ADMIN_TOTAL' ? 'admin_total' : (user.role === 'ADMIN_DEPT' ? 'admin_dept' : 'user'),
-            department: user.departmentId // Trả về ID phòng ban
+            department: user.departmentId // return department ID
         });
     } catch (error) {
         res.status(500).json({ error: 'Server error' });

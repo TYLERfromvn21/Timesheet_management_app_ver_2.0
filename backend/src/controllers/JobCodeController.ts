@@ -1,12 +1,15 @@
+// backend/src/controllers/JobCodeController.ts
+// this file is responsible for handling job code related operations
+// including fetching job codes by department, creating new job codes, and deleting job codes.
 import { Request, Response } from 'express';
 import { prisma } from '../app';
 
 export const JobCodeController = {
+  // function to get job codes by department
   getByDept: async (req: Request, res: Response) => {
     try {
       const { dept } = req.params;
       const jobs = await prisma.jobCode.findMany({
-        // 👇 FIX: Thêm String() để ép kiểu, tránh lỗi TypeScript
         where: { department: String(dept) }
       });
       
@@ -22,6 +25,7 @@ export const JobCodeController = {
     }
   },
 
+  // function to create a new job code
   create: async (req: Request, res: Response) => {
     try {
       const { department, job_code, task_description } = req.body;
@@ -39,6 +43,7 @@ export const JobCodeController = {
     }
   },
 
+  // function to delete a job code
   delete: async (req: Request, res: Response) => {
     try {
       const { job_id } = req.body;

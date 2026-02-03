@@ -1,16 +1,13 @@
 // backend/src/services/CurfewService.ts
-
+// This file defines a service to check if the current time falls within a restricted curfew period.
 export const CurfewService = {
-    /**
-     * Kiểm tra xem giờ hiện tại có nằm trong khung giờ cấm không.
-     * Rule: Cấm từ 23:00 đêm đến 06:00 sáng hôm sau.
-     * @returns true nếu bị cấm, false nếu được phép.
-     */
+
     isRestricted: (): boolean => {
         const now = new Date();
         const hour = now.getHours();
         
-        // Cấm nếu giờ >= 23 HOẶC giờ < 6
+        // if current time is between 11 PM and 6 AM, return true 
+        // for restricted curfew period
         if (hour >= 23 || hour < 6) {
             return true;
         }
