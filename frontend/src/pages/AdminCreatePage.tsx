@@ -1,3 +1,6 @@
+// frontend/src/pages/AdminCreatePage.tsx
+// This file implements the AdminCreatePage component which allows for the creation of new user accounts.
+// and handles different user roles and form states based on the current user's permissions.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin-create.css';
@@ -9,8 +12,8 @@ export default function AdminCreatePage() {
     const [pageTitle, setPageTitle] = useState("TẠO TÀI KHOẢN MỚI");
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
     const [departments, setDepartments] = useState<Department[]>([]);
-    
-    // --- CHECK FLOW ---
+    // we run some basic flow in this page to handle user creation for first run setup
+    // --- CHECK IF FIRST RUN FLOW ---
     const isFlow1 = localStorage.getItem('tempAuth') === 'true';
 
     const [formData, setFormData] = useState({

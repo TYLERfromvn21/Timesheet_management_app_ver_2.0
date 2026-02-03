@@ -1,4 +1,6 @@
-/* Copy style từ admin-login.html */
+/* frontend/src/styles/admin-create.css 
+    Styles for AdminCreatePage component
+*/
 .create-body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #ff4d4d 0%, #ff9a9e 100%); width: 100%; }
 .create-card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 400px; }
 .create-h1 { color: #b22222; text-align: center; margin-bottom: 30px; font-size: 24px; margin-top: 0; }

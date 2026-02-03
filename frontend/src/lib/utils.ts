@@ -1,3 +1,5 @@
+//frontend/src/lib/utils.ts
+// This file contains utility functions for class name management using clsx and tailwind-merge.
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 

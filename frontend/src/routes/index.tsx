@@ -1,42 +1,41 @@
 // src/routes/index.tsx
+// this file defines the routing for the React application
 import { createBrowserRouter } from "react-router-dom";
 import LoginPage from "../pages/LoginPage";
-import AdminPage from "../pages/AdminPage"; // Import trang Admin
-import AdminAuthPage from "../pages/AdminAuthPage";   // <-- Mới
-import AdminCreatePage from "../pages/AdminCreatePage"; // <-- Mới
+import AdminPage from "../pages/AdminPage"; 
+import AdminAuthPage from "../pages/AdminAuthPage";   
+import AdminCreatePage from "../pages/AdminCreatePage"; 
 import DashboardPage from "../pages/DashboardPage";
 import UserManagementPage from "../pages/UserManagementPage";
-// Sau này sẽ import thêm Dashboard, Timesheet... ở đây
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <LoginPage />, // Mặc định vào trang Login
+    element: <LoginPage />, // Redirect to LoginPage by default
   },
   {
-    path: "/login",
+    path: "/login", // Redirect to LoginPage
     element: <LoginPage />,
   },
   {
-    path: "/admin", // Đường dẫn truy cập
+    path: "/admin", // Redirect to AdminPage for admin dashboard
     element: <AdminPage />,
   },
   {
-    path: "/admin-auth",   // Link vào trang xác thực admin
+    path: "/admin-auth",   // Redirect to AdminAuthPage for admin authentication
     element: <AdminAuthPage />,
   },
   {
-    path: "/admin-create", // Link vào trang tạo tài khoản
+    path: "/admin-create", // Redirect to AdminCreatePage for admin account creation
     element: <AdminCreatePage />,
   },
   {
-    path: "/dashboard", // <--- Đây là địa chỉ mà trang Login đang cố chuyển tới
+    path: "/dashboard", // Redirect to DashboardPage after successful login
     element: <DashboardPage />,
   },
   {
-    path: "/admin/users", // <--- Route mới cho quản lý tài khoản
+    path: "/admin/users", // Redirect to UserManagementPage for managing users
     element: <UserManagementPage />,
   },
-  // Sau này sẽ thêm các route khác:
-  // { path: "/dashboard", element: <DashboardPage /> }
+
 ]);

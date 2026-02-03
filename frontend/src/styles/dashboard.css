@@ -1,4 +1,6 @@
-/* frontend/src/styles/dashboard.css */
+/* frontend/src/styles/dashboard.css
+    Dashboard Stylesheet
+*/
 
 .dashboard-body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f6; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
@@ -26,11 +28,9 @@
 .btn-add { background: #b22222; color: white; padding: 12px 40px; border-radius: 30px; border: none; font-size: 16px; cursor: pointer; box-shadow: 0 4px 6px rgba(178, 34, 34, 0.3); font-weight: bold; margin: 15px auto; display: block; }
 .btn-add:hover { transform: translateY(-2px); background: #a51b1b; }
 
-/* -- Yêu cầu 3: Input to hơn -- */
 .admin-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 15px; }
 .btn-action { width: 100%; padding: 12px; background: #b22222; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
 
-/* -- Yêu cầu 1: Nút Góp ý to đẹp góc trái dưới -- */
 .btn-feedback {
     position: fixed;
     bottom: 30px;

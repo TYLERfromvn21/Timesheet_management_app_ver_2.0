@@ -1,28 +1,27 @@
+// frontend/src/pages/LoginPage.tsx
+// This file is the React component for the Login Page. It handles user login, including form state management,
+// API calls to the backend, and displaying messages to the user.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/auth.css'; 
 
 export default function LoginPage() {
-    // --- 1. KHAI BÁO STATE (Biến lưu trữ dữ liệu) ---
-    // State lưu username và password người dùng nhập
+    // --- 1. STATE MANAGEMENT ---
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: '',
         password: ''
     });
 
-    // State ẩn/hiện mật khẩu (thay cho hàm togglePass cũ)
+    // State hide/show password
     const [showPassword, setShowPassword] = useState(false);
 
-    // State thông báo lỗi hoặc thành công
+    // State message show error/success
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
-    // --- 2. XỬ LÝ LOGIC ---
+    // --- 2. LOGIC HANDLERS ---
 
-    /**
-     * Hàm chạy 1 lần khi trang vừa load (giống đoạn script check URL params cũ)
-     * Kiểm tra xem trên thanh địa chỉ có ?error=... hay ?message=... không
-     */
+    // function to parse URL parameters for messages
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const errorMsg = params.get('error');
@@ -32,9 +31,7 @@ export default function LoginPage() {
         if (successMsg) setMessage({ type: 'success', text: decodeURIComponent(successMsg) });
     }, []);
 
-    /**
-     * Hàm xử lý khi người dùng gõ phím
-     */
+    // function to handle input changes
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
             ...formData,
@@ -42,16 +39,13 @@ export default function LoginPage() {
         });
     };
 
-    /**
-     * Hàm xử lý Đăng Nhập (Thay thế cho form action="/login")
-     * Kết nối tới Backend API thật
-     */
+    //function to handle form submission
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault(); // Chặn việc load lại trang của form HTML cũ
-        setMessage(null); // Xóa thông báo cũ
+        e.preventDefault(); 
+        setMessage(null); 
 
         try {
-            // Gọi API Login của Backend (Port 3000)
+            // call login API
             const res = await fetch('http://localhost:3000/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -60,21 +54,21 @@ export default function LoginPage() {
 
             const data = await res.json();
 
-            // LoginPage.tsx - handleLogin function (around line 57)
+            // LoginPage.tsx - handleLogin function 
 if (res.ok) {
     setMessage({ type: 'success', text: 'Đăng nhập thành công! Đang chuyển hướng...' });
     
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
     
-    // ✅ Clear tempAuth flag if it exists (in case user was in Flow 1)
+    // Clear tempAuth flag if it exists (in case user was in Flow 1)
     localStorage.removeItem('tempAuth');
 
     setTimeout(() => {
         navigate('/dashboard');
     }, 1000);
 } else {
-                // Đăng nhập thất bại (Sai pass/user)
+                
                 setMessage({ type: 'error', text: data.message || 'Đăng nhập thất bại' });
             }
         } catch (err) {
@@ -82,13 +76,9 @@ if (res.ok) {
         }
     };
 
-    /**
-     * Logic xử lý Admin Login (Giữ nguyên logic cũ)
-     * Kiểm tra trạng thái hệ thống trước khi chuyển trang
-     */
+    // function to handle admin login redirection
     const handleAdminLogin = async () => {
         try {
-            // Gọi API kiểm tra (Hiện tại backend chưa có API này nên sẽ báo lỗi, giữ logic để sau này làm)
             const res = await fetch('http://localhost:3000/api/auth/check-system-status');            const data = await res.json();
             
             if (data.isSetupMode) {
@@ -101,7 +91,7 @@ if (res.ok) {
         }
     };
 
-    // --- 3. PHẦN GIAO DIỆN (JSX - Tương tự HTML cũ) ---
+    // --- 3. RENDERING ---
     return (
         <div className="login-container">
             {/* Left Panel: Branding */}
@@ -135,7 +125,7 @@ if (res.ok) {
                         <div className="form-group">
                             <label>Mật khẩu</label>
                             <input 
-                                type={showPassword ? "text" : "password"} // Logic ẩn hiện pass
+                                type={showPassword ? "text" : "password"}
                                 name="password" 
                                 required 
                                 placeholder="Nhập mật khẩu..." 
@@ -143,7 +133,6 @@ if (res.ok) {
                                 value={formData.password}
                                 onChange={handleChange}
                             />
-                            {/* Nút con mắt toggle pass */}
                             <span 
                                 onClick={() => setShowPassword(!showPassword)} 
                                 className="eye-icon"
@@ -168,7 +157,6 @@ if (res.ok) {
                         </div>
                     </form>
 
-                    {/* Hiển thị thông báo lỗi/thành công */}
                     {message && (
                         <div className={`message-box ${message.type}`}>
                             {message.text}

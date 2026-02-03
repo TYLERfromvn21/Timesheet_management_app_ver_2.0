@@ -1,4 +1,6 @@
-/* frontend/src/LoginPage.css */
+/* frontend/src/LoginPage.css 
+    Styles for the Login Page of the Timesheet Management Application
+*/
 
 /* Global Layout */
 .login-container {
@@ -138,15 +140,14 @@
     border: 1px solid #55efc4;
 }
 
-/* Password Visibility Toggle Icon */
 .eye-icon {
     position: absolute;
     right: 15px;
-    top: 38px; /* Đã chỉnh lại 1 chút cho cân đối với React */
+    top: 38px; 
     cursor: pointer;
     font-size: 1.2em;
     color: #666;
-    user-select: none; /* Không cho bôi đen icon */
+    user-select: none; 
 }
 
 /* Mobile Responsiveness */

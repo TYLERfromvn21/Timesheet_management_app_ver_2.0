@@ -1,3 +1,6 @@
+// frontend/src/pages/DashboardPage.tsx
+// this file contains the main dashboard page with task timeline and admin controls
+// and includes fixes for task rendering and saving issues
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
@@ -29,7 +32,7 @@ export default function DashboardPage() {
     const [taskFormData, setTaskFormData] = useState({
         department: '', job_code: '', description: '', start: '08:00', end: '17:00'
     });
-    const [todayJobHistory, setTodayJobHistory] = useState<string>(''); // Biến lưu dòng lịch sử job màu xanh
+    const [todayJobHistory, setTodayJobHistory] = useState<string>(''); 
 
     // Admin State
     const [modalDeptOpen, setModalDeptOpen] = useState(false);
@@ -42,7 +45,7 @@ export default function DashboardPage() {
     const [adminSelectedDept, setAdminSelectedDept] = useState('');
     const [newJobData, setNewJobData] = useState({ code: '', desc: '' });
 
-    // --- HELPER: FORMAT DATE LOCAL ---
+    // --- FORMAT DATE LOCAL ---
     const getLocalISODate = (date: Date) => {
         const offset = date.getTimezoneOffset();
         const localDate = new Date(date.getTime() - (offset * 60 * 1000));
@@ -81,10 +84,10 @@ export default function DashboardPage() {
 const loadTasks = async () => {
     const dateStr = getLocalISODate(currentDate);
     try {
-        const token = localStorage.getItem('token');  // ✅ Get token
+        const token = localStorage.getItem('token');  // Get token
         const res = await fetch(`http://localhost:3000/api/tasks/${dateStr}`, {
             headers: { 
-                'Authorization': `Bearer ${token}`  // ✅ Send token
+                'Authorization': `Bearer ${token}`  // Send token
             }
         });
         
@@ -130,23 +133,23 @@ const loadTasks = async () => {
         const slots = []; for (let i = 6; i <= 22; i++) slots.push(<div key={i} className="time-slot"><span className="time-label">{i}:00</span></div>); return slots;
     };
 
-    // --- PHẦN ĐÃ SỬA: RENDER TASKS AN TOÀN HƠN ---
+    // --- RENDER TASKS ON TIMELINE ---
     const renderTasksOnTimeline = () => {
         return tasks.map(t => {
-            // Kiểm tra dữ liệu an toàn
+            // check for valid start and end times
             if (!t.start_time || !t.end_time) return null;
 
             const s = new Date(t.start_time);
             const e = new Date(t.end_time);
 
-            // Bỏ qua nếu ngày tháng bị lỗi
+            // skip if invalid dates
             if (isNaN(s.getTime()) || isNaN(e.getTime())) return null;
 
             const startHour = s.getHours();
             const startPos = (startHour - 6) + s.getMinutes() / 60;
             const duration = (e.getTime() - s.getTime()) / 3600000;
 
-            // Hàm format giờ HH:mm thủ công để tránh lỗi
+            // format time range
             const formatTime = (date: Date) => {
                 const h = date.getHours().toString().padStart(2, '0');
                 const m = date.getMinutes().toString().padStart(2, '0');
@@ -154,10 +157,10 @@ const loadTasks = async () => {
             };
             const timeRangeText = `${formatTime(s)} - ${formatTime(e)}`;
 
-            // Xử lý hiển thị nếu task nằm ngoài khung giờ
+            // skip tasks that end before 6am
             if (startPos + duration < 0) return null; 
 
-            // Tính toán vị trí hiển thị (xử lý trường hợp tràn lên trên)
+            // calculate display positions
             const displayTop = startPos < 0 ? 0 : startPos * 50;
             const realDuration = startPos < 0 ? duration + startPos : duration;
             const displayHeight = realDuration * 50;
@@ -197,7 +200,7 @@ const loadTasks = async () => {
             defaultDept = departments[0].id;
         }
 
-        // Hint Box: Logic lấy danh sách job trong ngày
+        // Hint Box: Show today's job history
         if (tasks.length > 0) {
             const uniqueJobs = Array.from(new Set(tasks.map(t => t.job_code)));
             setTodayJobHistory(uniqueJobs.join(', '));
@@ -229,12 +232,14 @@ const loadTasks = async () => {
         }
     };
 
+    // --- HANDLE MODAL CHANGES & SAVE ---
     const handleModalDeptChange = (newDeptVal: string) => {
         setTaskFormData(prev => ({ ...prev, department: newDeptVal, job_code: '' }));
         setSelectedJob(null);
         loadJobsByDept(newDeptVal, 'USER');
     }
 
+        // --- SAVE TASK WITH FIXES ---
 const handleSaveTask = async () => {
     if (!selectedJob) return alert("Chưa chọn Job!");
     
@@ -254,19 +259,19 @@ const handleSaveTask = async () => {
         department: taskFormData.department, 
         job_code: selectedJob, 
         task_description: taskFormData.description, 
-        start_time: dS.toISOString(),  // ✅ FIX: Use ISO string
-        end_time: dE.toISOString(),    // ✅ FIX: Use ISO string
+        start_time: dS.toISOString(), 
+        end_time: dE.toISOString(),   
         date: getLocalISODate(currentDate) 
     };
 
-    const token = localStorage.getItem('token');  // ✅ FIX: Get token
+    const token = localStorage.getItem('token');  
     
     try {
         const response = await fetch('http://localhost:3000/api/tasks/save', { 
             method: 'POST', 
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`  // ✅ FIX: Add auth header
+                'Authorization': `Bearer ${token}`  // Add auth header
             }, 
             body: JSON.stringify(payload) 
         });
@@ -278,13 +283,13 @@ const handleSaveTask = async () => {
         }
         
         setModalTaskOpen(false); 
-        await loadTasks();  // ✅ FIX: Wait for reload
+        await loadTasks();  // Wait for reload
     } catch (error) {
         console.error('Save error:', error);
         alert('Lỗi kết nối server');
     }
 };
-
+    // --- DELETE TASK ---
     const handleDeleteTask = async () => {
         if (!currentTaskId || !confirm("Xóa task này?")) return;
         await fetch('http://localhost:3000/api/tasks/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ task_id: currentTaskId }) });
@@ -300,18 +305,26 @@ const handleSaveTask = async () => {
         });
         if (res.ok) { setNewJobData({ code: '', desc: '' }); loadJobsByDept(adminSelectedDept, 'ADMIN'); alert("Đã tạo Job Code"); } else alert("Lỗi tạo Job");
     };
+
+    // --- DELETE JOB ---
     const handleDeleteJob = async (id: string) => {
         if(!confirm("Xóa Job Code này?")) return;
         await fetch('http://localhost:3000/api/job-codes/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ job_id: id }) });
         loadJobsByDept(adminSelectedDept, 'ADMIN');
     };
+
+    // --- DEPARTMENT MANAGEMENT ---
     const handleAddDept = async () => {
         if(!newDeptName) return; const res = await fetch('http://localhost:3000/api/departments/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name: newDeptName }) });
         if(res.ok) { setNewDeptName(''); loadDepartments(); }
     };
+
+    // --- UPDATE DEPARTMENT ---
     const handleUpdateDept = async (id: string, newName: string) => {
         if(!confirm("Cập nhật tên?")) return; await fetch('http://localhost:3000/api/departments/update', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id, name: newName }) }); loadDepartments();
     };
+
+    // --- DELETE DEPARTMENT ---
     const handleDeleteDept = async (id: string) => {
         if(!confirm("Xóa phòng?")) return; const res = await fetch('http://localhost:3000/api/departments/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
         if(res.ok) loadDepartments(); else alert("Không xóa được");
@@ -327,6 +340,7 @@ const handleSaveTask = async () => {
         }
     };
 
+    // --- DOWNLOAD REPORT ---
     const handleDownloadReport = () => {
         if (reportConfig.type === 'USER' && !reportConfig.userId) return alert("Vui lòng chọn nhân viên!");
         const baseUrl = 'http://localhost:3000/api/reports';
@@ -335,6 +349,7 @@ const handleSaveTask = async () => {
         window.open(baseUrl + '/' + endpoint + query, '_blank');
     };
 
+    // --- GET DEPARTMENT NAME ---
     const getDeptName = (idOrCode: string) => {
         const dept = departments.find(d => d.id === idOrCode || d.code === idOrCode);
         return dept ? dept.name : idOrCode;
@@ -423,7 +438,7 @@ const handleSaveTask = async () => {
                     <div className="modal-content">
                         <h2 style={{color:'#b22222', marginTop:0}}>Khai báo công việc</h2>
                         
-                        {/* HINT BOX: HIỂN THỊ JOB ĐÃ LÀM HÔM NAY (MÀU XANH) */}
+                        {/* HINT BOX */}
                         {todayJobHistory && (
                             <div style={{
                                 background: '#e1f5fe', 

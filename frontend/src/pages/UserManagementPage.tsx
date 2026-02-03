@@ -1,3 +1,7 @@
+// frontend/src/pages/UserManagementPage.tsx
+// This file implements the User Management Page for admin users. It includes
+// authentication checks, user listing with filtering based on roles, and
+// functionalities to create, edit, and delete user accounts.
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
@@ -15,6 +19,7 @@ export default function UserManagementPage() {
     const [editForm, setEditForm] = useState({ id: '', username: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
 
+    //function to check authentication and load initial data
     useEffect(() => {
     const init = async () => {
         const token = localStorage.getItem('token');
@@ -56,6 +61,7 @@ export default function UserManagementPage() {
     init();
     }, [navigate]);
 
+    //function to load users and departments
     const loadData = async () => {
         const resDept = await fetch('http://localhost:3000/api/departments');
         setDepartments(await resDept.json());
@@ -63,6 +69,7 @@ export default function UserManagementPage() {
         setUsers(await resUsers.json());
     };
 
+    //function to handle user update
     const handleUpdate = async () => {
         await fetch('http://localhost:3000/api/users/update', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -73,6 +80,7 @@ export default function UserManagementPage() {
         alert("Cập nhật thành công!");
     };
 
+    //function to handle user deletion
     const handleDelete = async (id: string) => {
         if(confirm("Xóa tài khoản này? Dữ liệu cũ vẫn còn nhưng không thể đăng nhập.")) {
             await fetch('http://localhost:3000/api/users/delete', {
@@ -83,14 +91,12 @@ export default function UserManagementPage() {
         }
     };
 
-    // --- YÊU CẦU 8: LOGIC LỌC USER ---
+    // function to filter users based on current user's role and selected department
     const filteredUsers = users.filter(u => {
         if (!currentUser) return false;
-        // 1. Admin Tổng: Xem hết (hoặc lọc theo dropdown)
         if (currentUser.role === 'admin_total') {
             return filterDept === 'all' ? true : u.departmentId === filterDept;
         }
-        // 2. Admin Phòng ban: CHỈ xem user thuộc phòng mình
         if (currentUser.role === 'admin_dept') {
             return u.departmentId === currentUser.department; 
         }

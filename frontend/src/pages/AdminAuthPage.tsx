@@ -1,3 +1,6 @@
+// frontend/src/pages/AdminAuthPage.tsx
+// This file contains the admin authentication page component.
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin-auth.css';
@@ -7,7 +10,8 @@ export default function AdminAuthPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
-
+    
+    //function to handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg('');
