@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
 
-const router = Router();
+const router: Router = Router();
 
 // 1. route to create a new user
 // 2. route to get all users

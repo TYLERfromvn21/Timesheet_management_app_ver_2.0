@@ -4,8 +4,7 @@
 import { Router } from 'express';
 import { DepartmentController } from '../controllers/DepartmentController';
 
-const router = Router();
-
+const router: Router = Router();
 // 1. Route to get all departments
 // 2. Route to add a new department
 // 3. Route to update an existing department

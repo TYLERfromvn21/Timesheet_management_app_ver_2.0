@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { ReportController } from '../controllers/ReportController';
 
-const router = Router();
+const router: Router = Router();
 
 // 1.route to export user report
 // 2.route to export job report

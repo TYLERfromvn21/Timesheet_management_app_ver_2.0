@@ -1,13 +1,12 @@
 // backend/src/controllers/TaskController.ts
 // This file contains task-related controllers
 // and uses TaskService for complex operations
+
 import { Request, Response } from 'express';
-import { prisma } from '../app';
-import { CurfewService } from '../services/CurfewService';
-import { TaskService } from '../services/TaskService'; // Import Service
+import { TaskService } from '../services/TaskService';
 import * as jwt from 'jsonwebtoken';
 
-// function to extract userId from JWT token
+// Helper function to extract user ID from JWT token
 const getUserIdFromToken = (req: Request): string | null => {
   const authHeader = req.headers.authorization;
   if (authHeader) {
@@ -21,51 +20,29 @@ const getUserIdFromToken = (req: Request): string | null => {
 };
 
 export const TaskController = {
-  // function to get tasks by date
+  //function to get tasks by date
   getByDate: async (req: Request, res: Response) => {
     try {
       const { date } = req.params;
       const userId = getUserIdFromToken(req);
       if (!userId) return res.json([]);
 
-      const searchDate = new Date(String(date));
-      searchDate.setHours(0, 0, 0, 0);
-      const nextDay = new Date(searchDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-
-      const tasks = await prisma.task.findMany({
-        where: {
-          date: { gte: searchDate, lt: nextDay },
-          userId: String(userId)  
-        },
-        orderBy: { startTime: 'asc' }
-      });
-
-      // Map data
-      const mappedTasks = tasks.map(t => ({
-        id: t.id,
-        task_id: t.id,
-        department: t.department,
-        job_code: t.jobCode,
-        task_description: t.taskDescription,
-        start_time: t.startTime.toISOString(),
-        end_time: t.endTime.toISOString(),
-        date: t.date.toISOString()
-      }));
-
-      res.json(mappedTasks);
+      // Gọi Service
+      const tasks = await TaskService.getTasksByDate(String(date), String(userId));
+      res.json(tasks);
     } catch (error) {
       console.error("Lỗi lấy task:", error);
       res.status(500).json({ error: 'Lỗi server' });
     }
   },
 
-  // function to save (create or update) a task
+  //function to  save a task
   save: async (req: Request, res: Response) => {
     try {
       const userId = getUserIdFromToken(req);
       if (!userId) return res.status(401).json({ error: 'Chưa đăng nhập' });
 
+      //call Service
       await TaskService.saveTask({
         taskId: req.body.task_id,
         department: req.body.department,
@@ -84,7 +61,7 @@ export const TaskController = {
     }
   },
 
-  // function to delete a task
+  //function to delete a task
   delete: async (req: Request, res: Response) => {
     try {
       const { task_id } = req.body;

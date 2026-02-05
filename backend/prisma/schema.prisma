@@ -42,6 +42,7 @@ model JobCode {
   jobCode         String   @unique
   taskDescription String
   createdAt       DateTime @default(now())
+  isDeleted   Boolean  @default(false)
 }
 
 model Task {

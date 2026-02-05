@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/AuthController';
 
-const router = Router();
+const router: Router = Router();
 
 // 1. route for user login
 // 2. route for checking system status

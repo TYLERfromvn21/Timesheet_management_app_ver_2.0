@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { TaskController } from '../controllers/TaskController';
 
-const router = Router();
+const router: Router = Router();
 
 // 1. route to get tasks by date
 // 2. route to save a task

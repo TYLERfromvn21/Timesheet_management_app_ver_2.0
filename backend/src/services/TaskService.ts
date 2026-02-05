@@ -1,10 +1,43 @@
 // backend/src/services/TaskService.ts
 // This file contains task-related services: save and delete tasks
 import { prisma } from '../app';
+import { CurfewService } from './CurfewService';
 
 export const TaskService = {
   // function to save (create or update) a task
+  getTasksByDate: async (dateStr: string, userId: string) => {
+    // Normalize date to start of the day
+    const searchDate = new Date(dateStr);
+    searchDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(searchDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        date: { gte: searchDate, lt: nextDay },
+        userId: userId
+      },
+      orderBy: { startTime: 'asc' }
+    });
+
+    return tasks.map(t => ({
+      id: t.id,
+      task_id: t.id,
+      department: t.department,
+      job_code: t.jobCode,
+      task_description: t.taskDescription,
+      start_time: t.startTime.toISOString(),
+      end_time: t.endTime.toISOString(),
+      date: t.date.toISOString()
+    }));
+  },
+
+  //function to save (create or update) a task
   saveTask: async (data: any) => {
+    // Check curfew restriction before allowing save
+    if (CurfewService.isRestricted()) {
+        throw new Error('Ngoài giờ khai báo!');
+    }
     const startDateTime = new Date(data.startTime);
     const endDateTime = new Date(data.endTime);
     const taskDate = new Date(data.date);
@@ -32,7 +65,7 @@ export const TaskService = {
       };
 
       if (data.taskId) {
-        // --- LOGIC security check for update ---
+        //logic security: only allow updating own tasks
         const existingTask = await tx.task.findUnique({ where: { id: data.taskId } });
         
         if (!existingTask) throw new Error('Task not found');

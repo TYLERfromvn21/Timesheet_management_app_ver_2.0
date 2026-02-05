@@ -1,18 +1,18 @@
 // backend/src/controllers/DepartmentController.ts
 // this file handles department-related requests
 // and includes functions to get, create, update, and delete departments
-import { Request, Response } from 'express';
-import { prisma } from '../app';
 
-// Controller for department-related operations
+import { Request, Response } from 'express';
+import { DepartmentService } from '../services/DepartmentService';
+
 export const DepartmentController = {
   // function to get all departments
   getAll: async (req: Request, res: Response) => {
     try {
-      const depts = await prisma.department.findMany({ orderBy: { name: 'asc' } });
+      const depts = await DepartmentService.getAll();
       res.json(depts);
     } catch (error) {
-      res.status(500).json({ message: 'Lỗi lấy danh sách phòng ban' });
+      res.status(500).json({ message: 'Lỗi server' });
     }
   },
   
@@ -20,26 +20,17 @@ export const DepartmentController = {
   create: async (req: Request, res: Response) => {
     try {
       const { name, code } = req.body;
-      // auto-generate code if not provided
-      const generatedCode = code || name.toUpperCase().replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      
-      const newDept = await prisma.department.create({
-        data: { name, code: generatedCode }
-      });
-      res.json({ message: 'Thêm phòng ban thành công', data: newDept });
+      const newDept = await DepartmentService.create(name, code);
+      res.json({ message: 'Thêm thành công', data: newDept });
     } catch (error) {
-      res.status(500).json({ error: 'Lỗi tạo phòng ban (Tên hoặc Mã đã tồn tại)' });
+      res.status(500).json({ error: 'Lỗi tạo (Tên hoặc Mã đã tồn tại)' });
     }
   },
 
   // function to update an existing department
   update: async (req: Request, res: Response) => {
     try {
-      const { id, name } = req.body;
-      await prisma.department.update({
-        where: { id },
-        data: { name }
-      });
+      await DepartmentService.update(req.body.id, req.body.name);
       res.json({ message: 'Cập nhật thành công' });
     } catch (error) {
       res.status(500).json({ error: 'Lỗi cập nhật' });
@@ -49,11 +40,10 @@ export const DepartmentController = {
   // function to delete a department
   delete: async (req: Request, res: Response) => {
     try {
-      const { id } = req.body;
-      await prisma.department.delete({ where: { id } });
-      res.json({ message: 'Đã xóa phòng ban' });
+      await DepartmentService.delete(req.body.id);
+      res.json({ message: 'Đã xóa' });
     } catch (error) {
-      res.status(500).json({ error: 'Không thể xóa (Có thể đang có nhân viên thuộc phòng này)' });
+      res.status(500).json({ error: 'Không thể xóa (Có ràng buộc dữ liệu)' });
     }
   }
 };
