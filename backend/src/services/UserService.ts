@@ -25,19 +25,30 @@ export const UserService = {
   create: async (data: any) => {
     const { username, password, role, departmentId } = data;
 
+    // check if username already exists
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) throw new Error('Tên đăng nhập đã tồn tại!');
 
-    // Logic: Hash password
+    // encrypt the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    //construct data object for user creation
+    const dataToCreate: any = {
+      username,
+      password: hashedPassword,
+      role: role === 'admin_dept' ? 'ADMIN_DEPT' : (role === 'admin_total' ? 'ADMIN_TOTAL' : 'USER'),
+    };
+
+    // if role is admin_dept, link the department
+    if (departmentId && role !== 'admin_total') {
+      dataToCreate.department = {
+        connect: { id: departmentId }
+      };
+    }
+
+    //call prisma to create the user
     return await prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        role: role === 'admin_dept' ? 'ADMIN_DEPT' : (role === 'admin_total' ? 'ADMIN_TOTAL' : 'USER'),
-        departmentId: role === 'admin_total' ? undefined : departmentId
-      }
+      data: dataToCreate
     });
   },
 

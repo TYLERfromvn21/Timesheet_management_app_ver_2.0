@@ -15,8 +15,8 @@ model User {
   username      String      @unique
   password      String
   role          UserRole
-  departmentId  String
-  department    Department  @relation(fields: [departmentId], references: [id])
+  departmentId  String?
+  department    Department?  @relation(fields: [departmentId], references: [id])
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
