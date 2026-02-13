@@ -111,7 +111,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onSuccess, isFlo
     return (
         <div className="create-card">
             <h1 className="create-h1" style={{color: isFlow1 ? '#b22222' : '#333'}}>
-                {isFlow1 ? "👑 THIẾT LẬP ADMIN ĐẦU TIÊN" : "TẠO TÀI KHOẢN MỚI"}
+                {isFlow1 ? "THIẾT LẬP ADMIN" : "TẠO TÀI KHOẢN MỚI"}
             </h1>
 
             {message && (

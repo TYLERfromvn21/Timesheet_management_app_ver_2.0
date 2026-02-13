@@ -20,7 +20,7 @@ export const AdminLoginForm = () => {
     const [errorMsg, setErrorMsg] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
-    // State for setup mode (when no users exist    )
+    // State for setup mode (when no users exist)
     const [isSetupMode, setIsSetupMode] = useState(false);
     const [checkingSystem, setCheckingSystem] = useState(true);
 
@@ -67,14 +67,17 @@ export const AdminLoginForm = () => {
     if (checkingSystem) return <div style={{textAlign:'center', marginTop:'50px', color:'#666'}}>Đang kiểm tra hệ thống...</div>;
 
     // if in setup mode, show create first admin form
+    // TEMPORARILY HIDE the normal authentication UI. 
+    // We render ONLY the CreateUserForm here to avoid UI overlapping (double cards).
     if (isSetupMode) {
         return (
-            <div className="auth-card" style={{maxWidth: '500px'}}>
+            // Used a simple flex container instead of 'auth-card' to let CreateUserForm control its own styling.
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', width: '100%' }}>
                 <CreateUserForm 
                     isFlow1={true} 
                     onSuccess={() => {
                         alert("Chúc mừng! Bạn đã tạo Admin Tổng đầu tiên.\nVui lòng đăng nhập để tiếp tục.");
-                        setIsSetupMode(false); // exit setup mode back to login
+                        setIsSetupMode(false); // exit setup mode, showing the login form below
                         window.location.reload();
                     }} 
                 />
@@ -83,6 +86,7 @@ export const AdminLoginForm = () => {
     }
 
     //form for admin login
+    // This UI will reappear once the first admin is created (isSetupMode = false).
     return (
         <div className="auth-card">
             <h2 className="auth-h2">ĐĂNG NHẬP QUẢN TRỊ</h2>
@@ -95,6 +99,7 @@ export const AdminLoginForm = () => {
                     type="text" 
                     className="auth-input" 
                     placeholder="Tên đăng nhập Admin" 
+                    aria-label="Tên đăng nhập quản trị" 
                     required 
                     value={formData.username} 
                     onChange={(e) => setFormData({...formData, username: e.target.value})}
@@ -103,6 +108,7 @@ export const AdminLoginForm = () => {
                     type="password" 
                     className="auth-input" 
                     placeholder="Mật khẩu" 
+                    aria-label="Mật khẩu quản trị"
                     required 
                     value={formData.password} 
                     onChange={(e) => setFormData({...formData, password: e.target.value})}

@@ -11,8 +11,6 @@ import '../styles/admin-create.css';
 export default function AdminCreatePage() {
     const navigate = useNavigate();
     const { logout, checkAuth } = useAuthStore();
-    
-    // Check if the current session is temporary (meaning the user is creating their first permanent account)
     const isTempSession = localStorage.getItem('tempAuth') === 'true';
 
     useEffect(() => {
@@ -29,11 +27,12 @@ export default function AdminCreatePage() {
     };
 
     return (
-        <div className="create-body">
+        // 1. SỬA: Dùng <main> thay vì <div> để máy đọc biết đây là nội dung chính
+        <main className="create-body">
             <div style={{maxWidth: '500px', margin: '0 auto', paddingTop: '50px'}}>
-                {/* Form create user */}
+                
                 <CreateUserForm 
-                    isFlow1={false} // always false in admin create page
+                    isFlow1={false} 
                     onSuccess={() => {
                         if (isTempSession) {
                             alert("Đã tạo tài khoản. Đang đăng xuất...");
@@ -45,12 +44,28 @@ export default function AdminCreatePage() {
                     }}
                 />
 
-                <div className="note" style={{marginTop:'20px', textAlign: 'center', background: 'white', padding: '10px', borderRadius: '4px'}}>
-                     <a onClick={handleBack} style={{color: isTempSession ? '#666' : '#b22222', cursor:'pointer', textDecoration: 'underline', fontWeight:'bold'}}>
-                        {isTempSession ? "← Hủy & Quay lại Đăng nhập" : "← Quay lại Danh sách"}
-                    </a>
+                <div className="note" style={{marginTop:'20px', textAlign: 'center', background: 'white', padding: '10px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'}}>
+                     {/* 2. SỬA: Đổi thẻ <a> thành <button> để Google không bắt lỗi thiếu href */}
+                     <button 
+                        onClick={handleBack} 
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: 0,
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            color: isTempSession ? '#666' : '#b22222', 
+                            cursor:'pointer', 
+                            textDecoration: 'underline', 
+                            fontWeight: 'bold'
+                        }}
+                        // Thêm aria-label cho Accessibility
+                        aria-label={isTempSession ? "Hủy tạo và quay lại đăng nhập" : "Quay lại danh sách tài khoản"}
+                    >
+                        {isTempSession ? "← Hủy & Quay lại Đăng nhập" : "← Quay lại Quản lý tài khoản"}
+                    </button>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }

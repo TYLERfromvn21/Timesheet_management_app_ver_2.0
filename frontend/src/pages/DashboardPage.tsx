@@ -31,62 +31,134 @@ export default function DashboardPage() {
     const [modalReportType, setModalReportType] = useState<'USER' | 'JOB' | null>(null);
     const [modalDeptOpen, setModalDeptOpen] = useState(false);
 
+    // fetch initial data on mount
     useEffect(() => {
-        checkAuth();
-        // Admin total fetch departments
-        if (useAuthStore.getState().user?.role === 'admin_total') {
-            fetchDepartments();
-        }
-    }, []);
+        const initDashboard = async () => {
+            // check authentication for security and to get user info (like role and department)
+            await checkAuth();
+            
+            // Get current user from the store
+            const currentUser = useAuthStore.getState().user;
+            
+            if (currentUser) {
+                // create an array to hold promises
+                const promises = [];
+                
+                // always fetch tasks for the current user
+                promises.push(fetchTasks(currentUser.id));
+                
+                // if admin, also fetch departments
+                if (currentUser.role === 'admin_total') {
+                    promises.push(fetchDepartments());
+                }
 
+                // run all fetches in parallel
+                await Promise.all(promises);
+            }
+        };
+        
+        initDashboard();
+    }, []); // run only once on mount
+
+    // if selectedDate changes, refetch tasks for that date
     useEffect(() => {
         if (user) fetchTasks(user.id);
-    }, [selectedDate, user]);
+    }, [selectedDate]); 
 
+    //function to handle date navigation
     const handleAddDays = (days: number) => {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() + days);
         setDate(d);
     };
 
-    if (!user) return <div className="loading">Đang tải...</div>;
+    // if not logged in, show loading or redirect to login
+    if (!user) return <div className="loading">Đang tải dữ liệu...</div>;
 
     const isAdmin = user.role === 'admin_total' || user.role === 'admin_dept';
     const isTotalAdmin = user.role === 'admin_total';
 
+    // Render the dashboard page
     return (
-        <div className="dashboard-body">
-            {/* --- HEADER --- */}
-            <div className="dash-header">
+        <main className="dashboard-body">
+            <header className="dash-header">
                 <h1>TÍN VIỆT TIMESHEET</h1>
-                <div className="user-menu" onClick={() => setShowUserMenu(!showUserMenu)}>
-                    {user.username} ({user.role}) ▼
+                
+                <div style={{ position: 'relative' }}>
+                    <button 
+                        className="user-menu" 
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        style={{
+                            background: 'transparent', 
+                            border: 'none', 
+                            color: 'white', 
+                            fontSize: '1rem', 
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                        }}
+                        aria-expanded={showUserMenu}
+                        aria-haspopup="true"
+                        aria-label="Menu tài khoản"
+                    >
+                        {user.username} ({user.role}) ▼
+                    </button>
+                    
                     {showUserMenu && ( 
-                        <div className="user-dropdown"> 
-                            <button onClick={() => { logout(); navigate('/login'); }}>Đăng xuất</button> 
+                        <div className="user-dropdown" style={{
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            background: 'white',
+                            color: '#333',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            borderRadius: '4px',
+                            marginTop: '10px',
+                            minWidth: '150px',
+                            zIndex: 1000,
+                            overflow: 'hidden'
+                        }}> 
+                            <button 
+                                onClick={() => { logout(); navigate('/login'); }}
+                                style={{
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: '10px 15px',
+                                    background: 'white',
+                                    border: 'none',
+                                    color: '#d32f2f',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                Đăng xuất
+                            </button> 
                         </div> 
                     )}
                 </div>
-            </div>
+
+            </header>
             
-            {/* Error form report button */}
             <a 
                 href="https://forms.gle/yxhx5kWoTJXS1VXv7" 
                 target="_blank" 
                 className="btn-feedback" 
                 rel="noreferrer"
-                title="Báo lỗi hoặc góp ý"
+                aria-label="Báo lỗi phần mềm"
             >
                 🐞
             </a>
             
             <div className="dash-container">
-                {/* --- MAIN PANEL (TIMELINE) --- */}
                 <div className="main-panel">
                     <div className="date-nav">
-                        <button className="btn-nav" onClick={() => handleAddDays(-1)}>❮ Hôm qua</button>
+                        <button className="btn-nav" onClick={() => handleAddDays(-1)} aria-label="Ngày trước">❮ Hôm qua</button>
                         <h2>{selectedDate.toLocaleDateString('vi-VN')}</h2>
-                        <button className="btn-nav" onClick={() => handleAddDays(1)}>Ngày mai ❯</button>
+                        <button className="btn-nav" onClick={() => handleAddDays(1)} aria-label="Ngày sau">Ngày mai ❯</button>
                     </div>
                     
                     <div className="task-list" style={{ position: 'relative', minHeight: '300px' }}>
@@ -98,33 +170,29 @@ export default function DashboardPage() {
                     <button className="btn-add" onClick={() => { setEditTask(null); setModalTaskOpen(true); }}>+ Khai báo công việc</button>
                 </div>
 
-                {/* --- ADMIN PANEL --- */}
                 {isAdmin && (
                     <div className="admin-panel">
                         <h3 style={{color: '#b22222', borderBottom: '1px solid #eee', paddingBottom:'10px'}}>QUẢN TRỊ VIÊN</h3>
                         
-                        {/* Jobcode management */}
                         <JobCodeManagement />
-
-                        {/* Report */}
+                        
                         {isTotalAdmin && (
                             <div className="report-control">
                                 <label><strong>XUẤT BÁO CÁO</strong></label>
                                 <div style={{display:'flex', gap:'5px'}}>
-                                    <button className="btn-action" style={{background:'#2ecc71'}} onClick={() => setModalReportType('USER')}>Theo NV</button>
-                                    <button className="btn-action" style={{background:'#3498db'}} onClick={() => setModalReportType('JOB')}>Theo Job</button>
+                                    <button className="btn-action" style={{background:'#218838'}} onClick={() => setModalReportType('USER')}>Theo NV</button>
+                                    <button className="btn-action" style={{background:'#0069d9'}} onClick={() => setModalReportType('JOB')}>Theo Job</button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Management */}
                         <div className="report-control">
                             <label><strong>HỆ THỐNG</strong></label>
-                            <button className="btn-action" style={{background:'#8e44ad', marginBottom:'5px'}} onClick={() => navigate('/admin/users')}>
+                            <button className="btn-action" style={{background:'#6a3382', marginBottom:'5px'}} onClick={() => navigate('/admin/users')}>
                                 Quản lý Tài khoản
                             </button>
                             {isTotalAdmin && (
-                                <button className="btn-action" style={{background:'#f39c12'}} onClick={() => setModalDeptOpen(true)}>
+                                <button className="btn-action" style={{background:'#d68910'}} onClick={() => setModalDeptOpen(true)}>
                                     🏢 Quản lý Phòng Ban
                                 </button>
                             )}
@@ -133,10 +201,10 @@ export default function DashboardPage() {
                 )}
             </div>
 
-            {/* --- MODALS --- */}
+            {/* Modals */}
             {modalTaskOpen && <TaskForm isOpen={modalTaskOpen} onClose={() => setModalTaskOpen(false)} editTask={editTask} date={selectedDate} />}
             {modalReportType && <ReportGenerator type={modalReportType} onClose={() => setModalReportType(null)} />}
             {modalDeptOpen && <DepartmentManagement onClose={() => setModalDeptOpen(false)} />}
-        </div>
+        </main>
     );
 }
