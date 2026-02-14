@@ -3,7 +3,7 @@
 // and connects them to the corresponding controller methods.
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
-import { authenticate } from '../middleware/auth.middleware';
+//import { authenticate } from '../middleware/auth.middleware';
 const router: Router = Router();
 
 // 1. route to create a new user
@@ -11,7 +11,7 @@ const router: Router = Router();
 // 3. route to update a user
 // 4. route to delete a user
 router.post('/create', UserController.create);
-router.get('/all', authenticate, UserController.getAll);     
+router.get('/all', UserController.getAll);     
 router.post('/update', UserController.update);   
 router.post('/delete', UserController.delete);  
 
