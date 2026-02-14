@@ -8,10 +8,20 @@ export const UserService = {
   //function to get all users with their departments
   getAll: async () => {
     const users = await prisma.user.findMany({
-      include: { department: true },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        departmentId: true,
+        department: {
+          select: {
+            name: true 
+          }
+        }
+      },
       orderBy: { username: 'asc' }
     });
-    // Map database roles to application roles
+
     return users.map(u => ({
       id: u.id,
       username: u.username,
@@ -30,7 +40,7 @@ export const UserService = {
     if (existingUser) throw new Error('Tên đăng nhập đã tồn tại!');
 
     // encrypt the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 8);
 
     //construct data object for user creation
     const dataToCreate: any = {
@@ -56,7 +66,7 @@ export const UserService = {
   update: async (id: string, data: any) => {
     const updateData: any = { username: data.username };
     if (data.password && data.password.trim() !== '') {
-      updateData.password = await bcrypt.hash(data.password, 10);
+      updateData.password = await bcrypt.hash(data.password, 8);
     }
     return await prisma.user.update({ where: { id }, data: updateData });
   },

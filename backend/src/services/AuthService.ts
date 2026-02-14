@@ -9,9 +9,15 @@ export const AuthService = {
   //function to handle user login
   login: async (username: string, pass: string) => {
     const user = await prisma.user.findUnique({
-      where: { username },
-      include: { department: true }
-    });
+  where: { username },
+  select: {  
+    id: true,
+    username: true,
+    password: true,
+    role: true,
+    departmentId: true
+  }
+});
 
     if (!user) {
       throw new Error('User not found'); 
@@ -33,7 +39,12 @@ export const AuthService = {
   getProfile: async (userId: string) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { department: true } 
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        departmentId: true
+      }
     });
     if (!user) throw new Error('User not found');
     

@@ -1,9 +1,12 @@
-import express, { Express } from 'express'; // 1. Import thêm type Express
+// backend/src/app.ts
+//this file is the main entry point of the backend application
+// and is responsible for setting up the Express server, configuring middleware, and defining routes for the API endpoints. It also initializes the Prisma client for database interactions and includes error handling mechanisms.
+import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { PrismaClient } from '@prisma/client';
 
-// 2. SỬA ĐƯỜNG DẪN IMPORT (Trỏ thẳng vào file, bỏ v1)
+// Import routes
 import authRoutes from './routes/authRoutes';
 import departmentRoutes from './routes/departmentRoutes';
 import userRoutes from './routes/userRoutes';
@@ -11,18 +14,26 @@ import jobCodeRoutes from './routes/jobCodeRoutes';
 import taskRoutes from './routes/taskRoutes';       
 import reportRoutes from './routes/reportRoutes';
 
-// 3. FIX LỖI "The inferred type of app...": Khai báo rõ kiểu : Express
 const app: Express = express();
 
-export const prisma = new PrismaClient();
+// configure Prisma client with optimized settings
+export const prisma = new PrismaClient({
+  log: ['error'], 
+  errorFormat: 'minimal',
+});
 
 // Middleware
 app.use(helmet());
+
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);         
@@ -32,13 +43,27 @@ app.use('/api/job-codes', jobCodeRoutes);
 app.use('/api/tasks', taskRoutes);      
 app.use('/api/reports', reportRoutes);
 
+// Health check
 app.get('/api/health', async (req, res) => {
     try {
         await prisma.$queryRaw`SELECT 1`;
         res.status(200).json({ status: 'OK', database: 'Connected' });
     } catch (error) {
-        res.status(500).json({ status: 'ERROR', error });
+        res.status(500).json({ status: 'ERROR', database: 'Disconnected' });
     }
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found', path: req.path });
+});
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Global error:', err);
+    res.status(err.status || 500).json({
+        error: err.message || 'Internal Server Error'
+    });
 });
 
 export default app;
