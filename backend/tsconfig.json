@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "types": ["node"],
+    "types": ["node", "jest"],
     
     "paths": {
       "@controllers/*": ["src/controllers/*"],
@@ -29,6 +29,6 @@
       "@middleware/*": ["src/middleware/*"]
     }
   },
-  "include": ["src/**/*", "prisma/**/*"],
+  "include": ["src/**/*", "prisma/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
