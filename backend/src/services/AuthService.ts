@@ -1,7 +1,7 @@
 // backend/src/services/AuthService.ts
 // this file is responsible for user authentication logic
 // and generating JWT tokens upon successful login
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 import * as bcrypt from 'bcryptjs';
 import { signToken } from '../utils/jwt';
 

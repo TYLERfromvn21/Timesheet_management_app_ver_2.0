@@ -1,6 +1,6 @@
 // backend/src/services/TaskService.ts
 // This file contains task-related services: save and delete tasks
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 import { CurfewService } from './CurfewService';
 
 export const TaskService = {

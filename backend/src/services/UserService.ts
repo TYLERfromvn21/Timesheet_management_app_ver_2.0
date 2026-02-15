@@ -1,7 +1,7 @@
 // backend/src/services/UserService.ts
 // This file contains the UserService which handles user-related operations.
 // and interacts with the database using Prisma ORM.
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 import * as bcrypt from 'bcryptjs';
 
 export const UserService = {

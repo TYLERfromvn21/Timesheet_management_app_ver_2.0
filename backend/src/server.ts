@@ -1,9 +1,9 @@
 //backend/src/server.ts
 //this file is used to start the server and handle graceful shutdown
 // and load environment variables
-import app, { prisma } from './app';
+import app from './app';
 import dotenv from 'dotenv';
-
+import prisma from './config/prisma';
 // Load environment variables from .env file
 dotenv.config();
 
@@ -20,7 +20,7 @@ const server = app.listen(PORT, () => {
 
 // Graceful shutdown on SIGINT (Ctrl+C)
 process.on('SIGINT', async () => {
-  await prisma.$disconnect();
+  await prisma.$disconnect(); 
   server.close(() => {
     console.log('Server closed.');
     process.exit(0);

@@ -1,7 +1,7 @@
 // backend/src/services/JobCodeService.ts
 // This file manages job codes: retrieval by department, creation, and soft deletion.
 // and it ensures that deleted jobs are not shown in dropdowns.
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 
 export const JobCodeService = {
   // function to get job codes by department

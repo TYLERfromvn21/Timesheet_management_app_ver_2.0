@@ -1,7 +1,7 @@
 // backend/src/services/ReportService.ts
 // This file handles report generation: user reports and job reports.
 // and it creates Excel files with detailed formatting.
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 import * as ExcelJS from 'exceljs';
 
 export const ReportService = {

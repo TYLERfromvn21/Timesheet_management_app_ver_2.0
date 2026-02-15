@@ -1,7 +1,7 @@
 // backend/src/services/DepartmentService.ts
 // This file manages department-related operations: create, read, update, delete departments.
 // It includes business logic for generating department codes if not provided.
-import { prisma } from '../app';
+import prisma from '../config/prisma';
 
 export const DepartmentService = {
   //function to get all departments

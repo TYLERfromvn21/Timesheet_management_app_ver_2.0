@@ -4,7 +4,7 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { PrismaClient } from '@prisma/client';
+import prisma from './config/prisma';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -16,11 +16,11 @@ import reportRoutes from './routes/reportRoutes';
 
 const app: Express = express();
 
-// configure Prisma client with optimized settings
-export const prisma = new PrismaClient({
-  log: ['error'], 
-  errorFormat: 'minimal',
-});
+// // configure Prisma client with optimized settings
+// export const prisma = new PrismaClient({
+//   log: ['error'], 
+//   errorFormat: 'minimal',
+// });
 
 // Middleware
 app.use(helmet());
@@ -44,9 +44,17 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/reports', reportRoutes);
 
 // Health check
+// app.get('/api/health', async (req, res) => {
+//     try {
+//         await prisma.$queryRaw`SELECT 1`;
+//         res.status(200).json({ status: 'OK', database: 'Connected' });
+//     } catch (error) {
+//         res.status(500).json({ status: 'ERROR', database: 'Disconnected' });
+//     }
+// });
 app.get('/api/health', async (req, res) => {
     try {
-        await prisma.$queryRaw`SELECT 1`;
+        await prisma.$queryRaw`SELECT 1`; 
         res.status(200).json({ status: 'OK', database: 'Connected' });
     } catch (error) {
         res.status(500).json({ status: 'ERROR', database: 'Disconnected' });
