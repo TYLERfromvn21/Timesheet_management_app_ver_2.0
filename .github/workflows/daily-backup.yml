@@ -1,0 +1,45 @@
+name: Daily Database Backup
+
+# auto-trigger workflow when push to main branch or on a schedule (every day at midnight)
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup_database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install PostgreSQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create Backup File with Timestamp
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # 1. create a timestamp in the format YYYY-MM-DD_HH-MM (e.g., 2024-06-01_07-00)
+          TIMESTAMP=$(date -u -d "+7 hours" +'%Y-%m-%d_%H-%M')
+          
+          # 2. make a new filename with that timestamp (e.g., backup_database_TinViet_2024-06-01_07-00.sql)
+          FILENAME="backup_database_TinViet_${TIMESTAMP}.sql"
+          
+          # 3.download the database backup using pg_dump and save it to that filename
+          pg_dump "$DATABASE_URL" > "$FILENAME"
+          
+          echo "✅ Created backup file: $FILENAME"
+
+      - name: Upload Backup to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          # name of the artifact in GitHub
+          name: db-backup-${{ github.sha }}
+          
+          # Must use * to match the filename with the timestamp
+          path: backup_database_TinViet_*.sql
+          
+          retention-days: 30
