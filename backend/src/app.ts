@@ -17,6 +17,7 @@ import reportRoutes from './routes/reportRoutes';
 
 const app: Express = express();
 
+app.set('trust proxy', 1);
 // check if anyone is trying to access the server without providing a valid API key
 const limiter = rateLimit({
 	windowMs: 15 * 60 * 1000, 
