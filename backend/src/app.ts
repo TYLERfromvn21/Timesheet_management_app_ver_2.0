@@ -5,6 +5,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import prisma from './config/prisma';
+import rateLimit from 'express-rate-limit';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -16,8 +17,18 @@ import reportRoutes from './routes/reportRoutes';
 
 const app: Express = express();
 
+// check if anyone is trying to access the server without providing a valid API key
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, 
+	max: 100, 
+	standardHeaders: true, 
+	legacyHeaders: false,
+	message: 'Bạn gửi quá nhiều yêu cầu! Vui lòng thử lại sau 15 phút.'
+});
+
 // Middleware
 app.use(helmet());
+app.use(limiter);
 
 app.use(cors({
     origin: [

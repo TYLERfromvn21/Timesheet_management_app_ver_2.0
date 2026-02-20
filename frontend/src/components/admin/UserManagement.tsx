@@ -22,13 +22,17 @@ export const UserManagement = () => {
     const [editForm, setEditForm] = useState({ id: '', username: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
 
-    // Fetch users and departments on mount
+    // Fetch users on mount
     useEffect(() => {
         fetchUsers();
+    }, []);
+
+    // Watch currentUser state to fetch departments safely after F5
+    useEffect(() => {
         if (currentUser?.role === 'admin_total') {
             fetchDepartments();
         }
-    }, []);
+    }, [currentUser]); 
 
     // Logic to filter users based on current user's role and selected department
     const filteredUsers = users.filter(u => {
