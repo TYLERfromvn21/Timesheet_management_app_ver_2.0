@@ -55,13 +55,16 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/reports', reportRoutes);
 
 // Health check
-app.get('/api/health', async (req, res) => {
-    try {
-        await prisma.$queryRaw`SELECT 1`; 
-        res.status(200).json({ status: 'OK', database: 'Connected' });
-    } catch (error) {
-        res.status(500).json({ status: 'ERROR', database: 'Disconnected' });
-    }
+// app.get('/api/health', async (req, res) => {
+//     try {
+//         await prisma.$queryRaw`SELECT 1`; 
+//         res.status(200).json({ status: 'OK', database: 'Connected' });
+//     } catch (error) {
+//         res.status(500).json({ status: 'ERROR', database: 'Disconnected' });
+//     }
+// });
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'OK', message: 'Backend is awake!' });
 });
 
 // 404 handler

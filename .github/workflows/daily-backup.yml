@@ -13,30 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install PostgreSQL Client 17
-        run: |
-          # Thêm thư viện của PostgreSQL 17 vào máy chủ GitHub
-          sudo apt-get update
-          sudo apt-get install -y curl ca-certificates
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-          sudo apt-get update
-          # Cài đặt chính xác phiên bản 17
-          sudo apt-get install -y postgresql-client-17
-
-      - name: Create Backup File with Timestamp
+      - name: Create Backup File with Timestamp using Docker
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # 1. create a timestamp in the format YYYY-MM-DD_HH-MM (e.g., 2024-06-01_07-00)
+          # 1. create a timestamp in the format YYYY-MM-DD_HH-MM (e.g., 2026-02-21_07-00)
           TIMESTAMP=$(date -u -d "+7 hours" +'%Y-%m-%d_%H-%M')
           
-          # 2. make a new filename with that timestamp (e.g., backup_database_TinViet_2024-06-01_07-00.sql)
+          # 2. make a new filename with that timestamp
           FILENAME="backup_database_TinViet_${TIMESTAMP}.sql"
           
-          # 3.download the database backup using pg_dump and save it to that filename
-          pg_dump "$DATABASE_URL" > "$FILENAME"
+          # 3. use Docker to run pg_dump and save the output to the file
+          docker run --rm postgres:17 pg_dump "$DATABASE_URL" > "$FILENAME"
           
           echo "✅ Created backup file: $FILENAME"
 

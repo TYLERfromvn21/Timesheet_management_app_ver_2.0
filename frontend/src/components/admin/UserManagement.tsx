@@ -24,13 +24,11 @@ export const UserManagement = () => {
 
     // Fetch users on mount
     useEffect(() => {
-        fetchUsers();
-    }, []);
-
-    // Watch currentUser state to fetch departments safely after F5
-    useEffect(() => {
-        if (currentUser?.role === 'admin_total') {
-            fetchDepartments();
+        if (currentUser) {
+            fetchUsers();
+            if (currentUser.role === 'admin_total') {
+                fetchDepartments();
+            }
         }
     }, [currentUser]); 
 
