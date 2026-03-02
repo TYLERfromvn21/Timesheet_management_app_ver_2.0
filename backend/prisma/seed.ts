@@ -39,8 +39,8 @@ async function main() {
       username: 'admin',
       password: hashedPassword,
       role: 'ADMIN_TOTAL',
-      department: {
-        connect: { code: 'KHAC' }
+      departments: {
+        connect: [{ code: 'KHAC' }]
       }
     },
   });
