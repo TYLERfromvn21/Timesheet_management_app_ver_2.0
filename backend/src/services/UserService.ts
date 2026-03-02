@@ -12,10 +12,11 @@ export const UserService = {
         id: true,
         username: true,
         role: true,
-        departmentId: true,
-        department: {
+        departments: { // take the department names and codes for display and processing
           select: {
-            name: true 
+            id: true,
+            name: true,
+            code: true
           }
         }
       },
@@ -26,14 +27,16 @@ export const UserService = {
       id: u.id,
       username: u.username,
       role: u.role === 'ADMIN_TOTAL' ? 'admin_total' : (u.role === 'ADMIN_DEPT' ? 'admin_dept' : 'user'),
-      department: u.department ? u.department.name : '-',
-      departmentId: u.departmentId 
+      department: u.departments.length > 0 ? u.departments.map(d => d.name).join(', ') : '-',
+      departmentIds: u.departments.map(d => d.id),
+      departmentCodes: u.departments.map(d => d.code),
+      departments: u.departments
     }));
   },
 
   //function to  create a new user
   create: async (data: any) => {
-    const { username, password, role, departmentId } = data;
+    const { username, password, role, departmentIds } = data;
 
     // check if username already exists
     const existingUser = await prisma.user.findUnique({ where: { username } });
@@ -49,10 +52,9 @@ export const UserService = {
       role: role === 'admin_dept' ? 'ADMIN_DEPT' : (role === 'admin_total' ? 'ADMIN_TOTAL' : 'USER'),
     };
 
-    // if role is admin_dept, link the department
-    if (departmentId && role !== 'admin_total') {
-      dataToCreate.department = {
-        connect: { id: departmentId }
+    if (departmentIds && Array.isArray(departmentIds) && departmentIds.length > 0 && role !== 'admin_total') {
+      dataToCreate.departments = {
+        connect: departmentIds.map((id: string) => ({ id }))
       };
     }
 
@@ -65,9 +67,17 @@ export const UserService = {
   //function to update an existing user
   update: async (id: string, data: any) => {
     const updateData: any = { username: data.username };
+    
     if (data.password && data.password.trim() !== '') {
       updateData.password = await bcrypt.hash(data.password, 8);
     }
+
+    if (data.departmentIds && Array.isArray(data.departmentIds)) {
+      updateData.departments = {
+        set: data.departmentIds.map((deptId: string) => ({ id: deptId }))
+      };
+    }
+
     return await prisma.user.update({ where: { id }, data: updateData });
   },
 

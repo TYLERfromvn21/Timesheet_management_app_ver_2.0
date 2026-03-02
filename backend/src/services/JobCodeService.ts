@@ -5,13 +5,18 @@ import prisma from '../config/prisma';
 
 export const JobCodeService = {
   // function to get job codes by department
-  getByDept: async (deptId: string) => {
+  getByDept: async (deptIdsString: string) => {
+    // Split the comma-separated string into an array of department IDs, 
+    // trimming whitespace and filtering out empty strings
+    const deptsArray = deptIdsString.split(',').map(id => id.trim()).filter(id => id !== '');
+
     const jobs = await prisma.jobCode.findMany({
       where: { 
-        department: String(deptId),
-        isDeleted: false // use to filter out deleted jobs (soft delete:: mean not show in dropdowns but keep in DB)
+        department: { in: deptsArray }, 
+        isDeleted: false // soft delete
       }
     });
+    
     return jobs.map(j => ({
       id: j.id,
       department: j.department,
@@ -20,7 +25,7 @@ export const JobCodeService = {
     }));
   },
 
-  // function to  create a new job code
+  // function to create a new job code
   create: async (data: { department: string, job_code: string, task_description: string }) => {
     return await prisma.jobCode.create({
       data: { 

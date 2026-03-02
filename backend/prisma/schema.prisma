@@ -9,19 +9,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- 1. Model cho Auth (Giữ nguyên quan hệ User - Department) ---
+// --- 1. Model Auth ---
 model User {
-  id            String      @id @default(cuid())
-  username      String      @unique
+  id            String       @id @default(cuid())
+  username      String       @unique
   password      String
   role          UserRole
-  departmentId  String?
-  department    Department?  @relation(fields: [departmentId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  
+  departments   Department[] @relation("NewRelation") 
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
 
-  @@index([departmentId])
   @@index([role])
 }
 
@@ -29,20 +29,22 @@ model Department {
   id        String    @id @default(cuid())
   code      String    @unique
   name      String
-  users     User[]    // Một phòng ban có nhiều user
+  
+  users     User[]    @relation("NewRelation") 
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 }
 
-// --- 2. Model cho Dashboard (Phiên bản đơn giản, không relation) ---
+// --- 2. Model Dashboard ---
 model JobCode {
   id              String   @id @default(uuid())
-  department      String   // Lưu mã phòng ban (VD: IT) trực tiếp
+  department      String   
   jobCode         String   @unique
   taskDescription String
   createdAt       DateTime @default(now())
-  isDeleted   Boolean  @default(false)
+  isDeleted       Boolean  @default(false)
 }
 
 model Task {
@@ -52,7 +54,7 @@ model Task {
   taskDescription String
   startTime       DateTime
   endTime         DateTime
-  date            DateTime // Ngày làm việc
+  date            DateTime 
   createdAt       DateTime @default(now())
   userId          String
 }

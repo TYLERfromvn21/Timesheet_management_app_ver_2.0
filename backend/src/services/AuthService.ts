@@ -9,15 +9,17 @@ export const AuthService = {
   //function to handle user login
   login: async (username: string, pass: string) => {
     const user = await prisma.user.findUnique({
-  where: { username },
-  select: {  
-    id: true,
-    username: true,
-    password: true,
-    role: true,
-    departmentId: true
-  }
-});
+      where: { username },
+      select: {  
+        id: true,
+        username: true,
+        password: true,
+        role: true,
+        departments: { // take array of departments
+          select: { id: true, code: true, name: true }
+        }
+      }
+    });
 
     if (!user) {
       throw new Error('User not found'); 
@@ -32,10 +34,17 @@ export const AuthService = {
     // create JWT token
     const token = signToken({ id: user.id, role: user.role });
     const { password, ...userInfo } = user;
-    return { user: userInfo, token };
+    
+    const formattedUser = {
+      ...userInfo,
+      departmentIds: user.departments.map(d => d.id),
+      departmentCodes: user.departments.map(d => d.code)
+    };
+
+    return { user: formattedUser, token };
   },
 
-  // function to  get user profile
+  // function to get user profile
   getProfile: async (userId: string) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -43,15 +52,21 @@ export const AuthService = {
         id: true,
         username: true,
         role: true,
-        departmentId: true
+        departments: { // take array of departments
+          select: { id: true, name: true, code: true }
+        }
       }
     });
+    
     if (!user) throw new Error('User not found');
     
     return {
+      id: user.id,
       username: user.username,
       role: user.role === 'ADMIN_TOTAL' ? 'admin_total' : (user.role === 'ADMIN_DEPT' ? 'admin_dept' : 'user'),
-      department: user.departmentId
+      departments: user.departments,
+      departmentIds: user.departments.map(d => d.id),
+      departmentCodes: user.departments.map(d => d.code)
     };
   },
 

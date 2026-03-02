@@ -15,8 +15,13 @@ export interface User {
   id: string;
   username: string;
   role: UserRole;
-  department?: Department | string | null; // can be object, id string, or null
+  
+  department?: Department | string | null; 
   departmentId?: string;
+  
+  departments?: Department[]; 
+  departmentIds?: string[];
+  departmentCodes?: string[];
 }
 
 //interface for Login Response

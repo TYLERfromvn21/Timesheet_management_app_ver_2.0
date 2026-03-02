@@ -1,10 +1,13 @@
 // frontend/src/components/timesheet/TaskForm.tsx
 // This component provides a form for creating and editing tasks,
 // allowing users to select department, job code, description, and time range.
+
 import React, { useState, useEffect } from 'react';
 import { useTaskStore } from '../../store/taskStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUserStore } from '../../store/userStore';
+
+import { JobSelectionTable } from './JobSelectionTable'; 
 import '../../styles/dashboard.css';
 
 interface Props {
@@ -19,7 +22,6 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
     const { jobCodes, saveTask, fetchJobCodes, deleteTask, tasks } = useTaskStore();
     const { departments, fetchDepartments } = useUserStore();
     
-    // State form
     const [formData, setFormData] = useState({
         department: '', 
         jobCode: '',
@@ -30,7 +32,6 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
     const [isLoading, setIsLoading] = useState(false);
     const [todayJobHistory, setTodayJobHistory] = useState('');
 
-    // --- LOGIC TIME ---
     const getSafeTimeStr = (isoString: string) => {
         if (!isoString) return '08:00';
         try {
@@ -40,42 +41,17 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
         } catch (e) { return '08:00'; }
     };
 
-    const getLocalDateStr = (d: Date) => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    const isTotalAdmin = user?.role === 'admin_total';
+    const myDeptIds = user?.departmentIds || (user?.departmentId ? [user.departmentId] : []);
+    const allowedDepts = isTotalAdmin ? departments : departments.filter(d => myDeptIds.includes(d.id));
 
-    // --- LOGIC DISPAY DEPT NAME ---
-    const getDeptNameDisplay = (deptId: string) => {
-        if (!deptId) return '';
-        const dept = departments.find(d => d.id === deptId || d.code === deptId);
-        if (dept) return dept.name;
-        
-        if (user && (user.departmentId === deptId || user.department === deptId)) {
-            if (typeof user.department === 'object' && user.department) return (user.department as any).name;
-            return user.department || deptId;
-        }
-        return deptId;
-    };
-
-    // function to get user's department id
-    const getMyDeptId = () => {
-        if (!user) return '';
-        if (user.departmentId) return user.departmentId;
-        if (typeof user.department === 'object' && user.department) return (user.department as any).id;
-        return user.department; 
-    };
-
-    // Initialization
+    //function to initialize form data when opening the modal,
+    //  and also to fetch job codes based on the selected department.
     useEffect(() => {
         if (isOpen) {
             if (departments.length === 0) fetchDepartments();
             
-            // Hint Box
             if (tasks.length > 0) {
-                // Set job history for today (snake_case)
                 const uniqueJobs = Array.from(new Set(tasks.map((t: any) => t.job_code))).filter(Boolean);
                 setTodayJobHistory(uniqueJobs.join(', '));
             } else {
@@ -85,19 +61,18 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
             if (editTask) {
                 const sTime = getSafeTimeStr(editTask.start_time);
                 const eTime = getSafeTimeStr(editTask.end_time);
-                const deptId = editTask.department || getMyDeptId() || '';
+                const deptId = editTask.department || (allowedDepts.length > 0 ? allowedDepts[0].id : '');
 
                 setFormData({
                     department: deptId,
-                    jobCode: editTask.job_code, // take job_code in snake_case
-                    desc: editTask.task_description, // take task_description in snake_case
+                    jobCode: editTask.job_code, 
+                    desc: editTask.task_description, 
                     startTime: sTime,
                     endTime: eTime
                 });
                 if (deptId) fetchJobCodes(deptId);
             } else {
-                // CREATE NEW
-                const defaultDeptId = getMyDeptId() || '';
+                const defaultDeptId = allowedDepts.length > 0 ? allowedDepts[0].id : '';
                 setFormData({ 
                     department: defaultDeptId, 
                     jobCode: '', 
@@ -110,25 +85,21 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
         }
     }, [editTask, isOpen]);
 
-    //function to handle department change in modal
+    //function to handle changes in the department selection within the modal
     const handleModalDeptChange = (newDeptVal: string) => {
         setFormData(prev => ({ ...prev, department: newDeptVal, jobCode: '' }));
         if (newDeptVal) fetchJobCodes(newDeptVal);
     };
 
-    //function to handle job selection from the job codes table
+    //function to handle job selection from the JobSelectionTable component
     const handleSelectJob = (job: any) => {
         const code = job.job_code; 
-        
-        if (!code) {
-            console.error("Job object missing job_code:", job);
-            return;
-        }
-
-        setFormData(prev => ({ ...prev, jobCode: code }));
+        if (!code) return;
+        setFormData(prev => ({ ...prev, jobCode: code, department: job.department || prev.department }));
     };
 
-    //function to handle form submission
+    //function to handle form submission,
+    // including validation and API calls to save the task.
     const handleSubmit = async () => {
         if (!formData.department) return alert("Vui lòng chọn Phòng ban");
         if (!formData.jobCode) return alert("Chưa chọn Mã Job (Vui lòng nhấn nút 'Chọn' trong bảng)");
@@ -164,6 +135,7 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
         }
     };
 
+    //function to handle task deletion, with a confirmation prompt before proceeding.
     const handleDelete = async () => {
         if (!confirm("Bạn muốn xóa task này?")) return;
         try {
@@ -173,8 +145,6 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
     };
 
     if (!isOpen) return null;
-
-    const isTotalAdmin = user?.role === 'admin_total';
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -191,76 +161,36 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
 
                 <div className="form-group">
                     <label>Phòng ban</label>
-                    {isTotalAdmin ? (
+                    {isTotalAdmin || allowedDepts.length > 1 ? (
                         <select 
                             value={formData.department} 
                             onChange={(e) => handleModalDeptChange(e.target.value)}
                             style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}}
                         >
                             <option value="">-- Chọn Phòng Ban --</option>
-                            {departments.map(d => (
+                            {allowedDepts.map(d => (
                                 <option key={d.id} value={d.id}>{d.name}</option>
                             ))}
                         </select>
                     ) : ( 
                         <input 
-                            value={getDeptNameDisplay(formData.department)} 
+                            value={allowedDepts.length > 0 ? allowedDepts[0].name : ''} 
                             disabled 
                             style={{width:'100%', padding:'8px', background:'#f0f0f0', color:'#333', fontWeight:'bold', border:'1px solid #ccc', borderRadius:'4px'}} 
                         /> 
                     )}
                 </div>
 
-                {/* Table jobcode */}
                 <div className="form-group">
                     <label>Chọn Job Code: <span style={{color: '#b22222', fontWeight:'bold'}}>{formData.jobCode || '(Chưa chọn)'}</span></label>
-                    <div style={{maxHeight:'200px', overflowY:'auto', border:'1px solid #eee'}}>
-                        <table className="job-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
-                            <thead>
-                                <tr style={{background: '#f5f5f5', textAlign: 'left'}}>
-                                    <th style={{padding: '8px', borderBottom: '1px solid #ddd'}}>Mã</th>
-                                    <th style={{padding: '8px', borderBottom: '1px solid #ddd'}}>Nội dung</th>
-                                    <th style={{padding: '8px', borderBottom: '1px solid #ddd', width: '70px'}}>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {jobCodes.length === 0 && (
-                                    <tr><td colSpan={3} style={{textAlign:'center', padding:'20px', color:'#888'}}>
-                                        {formData.department ? "Không có Job nào trong phòng này" : "Vui lòng chọn phòng ban"}
-                                    </td></tr>
-                                )}
-                                {jobCodes.map(j => {
-                                    const code = j.job_code; 
-                                    const desc = j.task_description;
-                                    const isSelected = formData.jobCode === code;
-                                    
-                                    return (
-                                        <tr key={j.id} style={{
-                                            borderBottom: '1px solid #eee', 
-                                            background: isSelected ? '#e3f2fd' : 'white',
-                                            borderLeft: isSelected ? '4px solid #2196f3' : 'none'
-                                        }}>
-                                            <td style={{padding: '8px', fontWeight: 'bold', color: '#b22222'}}>{code}</td>
-                                            <td style={{padding: '8px'}}>{desc}</td>
-                                            <td style={{padding: '8px'}}>
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => handleSelectJob(j)} 
-                                                    style={{
-                                                        cursor:'pointer', padding: '4px 8px', 
-                                                        background: isSelected ? '#2ecc71' : '#2196f3',
-                                                        color: 'white', border: 'none', borderRadius: '4px'
-                                                    }}
-                                                >
-                                                    {isSelected ? 'Đã Chọn' : 'Chọn'}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                    
+                    <JobSelectionTable 
+                        jobCodes={jobCodes} 
+                        selectedJobCode={formData.jobCode} 
+                        selectedDepartment={formData.department} 
+                        onSelectJob={handleSelectJob} 
+                    />
+
                 </div>
 
                 <div className="form-group">

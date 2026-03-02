@@ -19,12 +19,22 @@ export const UserController = {
   //function to  create a new user
   create: async (req: Request, res: Response) => {
     try {
-      //validate and map role/department fields
-      const { username, password, type, department, role, departmentId } = req.body;
+      const { username, password, type, department, role, departmentId, departmentIds } = req.body;
       const userRole = role || type; 
-      const deptId = departmentId || department;
+      
+      let deptIdsToConnect: string[] = [];
+      if (departmentIds && Array.isArray(departmentIds)) {
+          deptIdsToConnect = departmentIds;
+      } else if (departmentId || department) {
+          deptIdsToConnect = [departmentId || department];
+      }
 
-      const newUser = await UserService.create({ username, password, role: userRole, departmentId: deptId });
+      const newUser = await UserService.create({ 
+          username, 
+          password, 
+          role: userRole, 
+          departmentIds: deptIdsToConnect 
+      });
       res.json({ success: true, message: 'Tạo tài khoản thành công!', user: newUser });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message || 'Lỗi tạo tài khoản' });

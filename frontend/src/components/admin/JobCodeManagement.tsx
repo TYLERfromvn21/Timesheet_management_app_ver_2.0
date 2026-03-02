@@ -1,143 +1,113 @@
 //frontend/src/components/admin/JobCodeManagement.tsx
 // this file contains the Job Code Management component for admin users
 // and includes fixes for department name retrieval and job code operations
+
 import React, { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
 import { useTaskStore } from '../../store/taskStore';
 import { jobCodeService } from '../../services/jobCode.service';
 
+import { CreateJobCodeForm } from './CreateJobCodeForm';
+import { JobCodeList } from './JobCodeList';
+
 export const JobCodeManagement = () => {
     const { user } = useAuthStore();
     const { departments, fetchDepartments } = useUserStore();
     const { jobCodes, fetchJobCodes } = useTaskStore();
     
-    const [adminSelectedDept, setAdminSelectedDept] = useState('');
+    const [selectedDept, setSelectedDept] = useState('');
     const [newJobData, setNewJobData] = useState({ code: '', desc: '' });
 
     const isTotalAdmin = user?.role === 'admin_total';
+    const myDeptIds = user?.departmentIds || [];
 
-    //function to get department name of current user
-    const getMyDeptName = () => {
-        if (!user) return 'Chưa đăng nhập';
-        if (typeof user.department === 'object' && user.department !== null) {
-            return (user.department as any).name || 'Phòng không tên';
-        }
-        if (typeof user.department === 'string') {
-            if (user.department.length < 20 || user.department.includes(' ')) return user.department;
-        }
-        const d = departments.find(dept => dept.id === user.department);
-        return d ? d.name : 'Phòng của tôi';
-    };
+    const manageableDepts = isTotalAdmin 
+        ? departments 
+        : departments.filter(d => myDeptIds.includes(d.id));
 
-    const myDeptId = user?.departmentId || (typeof user?.department === 'string' ? user.department : (user?.department as any)?.id);
-
-    //function to fetch job codes on mount or when relevant data changes
+        //function to get department name by id, with fallback to id if not found
     useEffect(() => {
-        if (isTotalAdmin) {
-            fetchDepartments();
-        } else if (myDeptId) {
-            fetchJobCodes(myDeptId);
+        fetchDepartments();
+        if (!isTotalAdmin && myDeptIds.length === 1 && !selectedDept) {
+            setSelectedDept(myDeptIds[0]);
         }
-    }, [user]);
+    }, [user, myDeptIds]);
 
-    //fetch job codes when admin changes selected department
+    //function to fetch job codes when selected department changes or on initial load
     useEffect(() => {
-        if (isTotalAdmin && adminSelectedDept) {
-            fetchJobCodes(adminSelectedDept);
+        if (selectedDept) {
+            fetchJobCodes(selectedDept);
+        } else if (!isTotalAdmin && myDeptIds.length > 0) {
+            fetchJobCodes(myDeptIds.join(','));
         }
-    }, [adminSelectedDept]);
+    }, [selectedDept, isTotalAdmin, myDeptIds.length]);
 
-    //function to handle creating a new job code
+    //function to handle creating a new job code, with validation and error handling
     const handleCreateJob = async () => {
-        const deptId = isTotalAdmin ? adminSelectedDept : myDeptId;
-        if (!deptId) return alert("Vui lòng chọn phòng ban trước!");
+        const targetDept = selectedDept || (myDeptIds.length === 1 ? myDeptIds[0] : '');
+
+        if (!targetDept) return alert("Vui lòng chọn 1 phòng ban cụ thể để tạo Job!");
         if (!newJobData.code || !newJobData.desc) return alert("Thiếu thông tin job!");
 
         try {
             await jobCodeService.create({
-                department: deptId,
+                department: targetDept,
                 job_code: newJobData.code,
                 task_description: newJobData.desc
             });
             setNewJobData({ code: '', desc: '' });
-            fetchJobCodes(deptId);
-        } catch (e) { alert('Lỗi tạo job'); }
+            fetchJobCodes(targetDept);
+        } catch (e) { alert('Lỗi tạo job (Có thể mã trùng)'); }
     };
 
-    //function to handle deleting a job code
+    //function to handle deleting a job code, with confirmation and error handling
     const handleDeleteJob = async (id: string) => {
         if(!confirm("Xóa job này?")) return;
-        const deptId = isTotalAdmin ? adminSelectedDept : myDeptId;
         try {
             await jobCodeService.delete(id);
-            if(deptId) fetchJobCodes(deptId);
+            if(selectedDept) fetchJobCodes(selectedDept);
+            else if (myDeptIds.length > 0) fetchJobCodes(myDeptIds.join(','));
         } catch(e) { alert("Không thể xóa job đang dùng"); }
     };
 
-    //render component
+    //render the component with department selection, 
+    // create job form, and job code list, with conditional rendering based on user role and department selection
     return (
         <div className="admin-card">
-            {isTotalAdmin && (
+            {(isTotalAdmin || manageableDepts.length > 1) && (
                 <div style={{marginBottom: '15px'}}>
-                    <label style={{display:'block', marginBottom:'5px', fontWeight:'bold', color:'#333'}}>Chọn Phòng Ban Quản Lý:</label>
+                    <label style={{display:'block', marginBottom:'5px', fontWeight:'bold', color:'#333'}}>
+                        Chọn Phòng Ban:
+                    </label>
                     <select 
                         className="admin-input" 
-                        value={adminSelectedDept} 
-                        onChange={e => setAdminSelectedDept(e.target.value)}
-                        aria-label="Chọn phòng ban để quản lý Job Code"
+                        value={selectedDept} 
+                        onChange={e => setSelectedDept(e.target.value)}
                     >
-                        <option value="">-- Chọn phòng --</option>
-                        {departments.map(d => (
+                        <option value="">-- {isTotalAdmin ? 'Chọn phòng' : 'Tất cả phòng của tôi'} --</option>
+                        {manageableDepts.map(d => (
                             <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
                     </select>
                 </div>
             )}
 
-            {(!isTotalAdmin || adminSelectedDept) && (
-                <>
-                    <label><strong>TẠO JOBCODE ({isTotalAdmin ? 'Cho phòng đã chọn' : getMyDeptName()})</strong></label>
-                    
-                    <div style={{display:'flex', flexDirection: 'column', gap:'10px', marginBottom:'15px'}}>
-                        <input 
-                            className="admin-input" 
-                            placeholder="Mã Job code (VD: KT2004)" 
-                            value={newJobData.code} 
-                            onChange={e => setNewJobData({...newJobData, code: e.target.value})} 
-                            aria-label="Mã Job mới" 
-                            style={{padding: '10px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: '4px'}}
-                        />
-                        <input 
-                            className="admin-input" 
-                            placeholder="Mô tả jobcode" 
-                            value={newJobData.desc} 
-                            onChange={e => setNewJobData({...newJobData, desc: e.target.value})} 
-                            aria-label="Mô tả Job mới" 
-                            style={{padding: '10px', fontSize: '1rem', border: '1px solid #ccc', borderRadius: '4px'}}
-                        />
-                    </div>
-                    
-                    <button className="btn-action" onClick={handleCreateJob} style={{marginBottom:'15px', padding: '10px 20px', fontSize: '1rem'}}>+ Tạo Job Mới</button>
-                </>
+            {/* Component Create Job */}
+            {(selectedDept || myDeptIds.length === 1) && (
+                <CreateJobCodeForm 
+                    newJobData={newJobData} 
+                    setNewJobData={setNewJobData} 
+                    onCreateJob={handleCreateJob} 
+                />
             )}
 
-            <label><strong>DANH SÁCH JOB</strong></label>
-            <div style={{height: '150px', overflowY: 'auto', background: '#fff', border: '1px solid #eee', padding:'5px'}}>
-                {jobCodes.length === 0 && <p style={{color:'#555', fontSize:'0.9rem', textAlign:'center', padding:'10px'}}>Chưa có dữ liệu.</p>}
-                
-                {jobCodes.map(j => (
-                    <div key={j.id} className="job-manage-item" style={{display:'flex', justifyContent:'space-between', marginBottom:'5px', borderBottom:'1px solid #eee', paddingBottom:'5px'}}>
-                        <div>
-                            <div style={{fontWeight:'bold', color:'#b22222'}}>{j.job_code}</div>
-                            <div style={{fontSize:'0.9em', color:'#333'}}>{j.task_description}</div>
-                        </div>
-                        {(isTotalAdmin || user?.role === 'admin_dept') && (
-                            <button className="btn-del-job" onClick={() => handleDeleteJob(j.id)} style={{color:'#d32f2f', border:'none', background:'none', cursor:'pointer', fontWeight:'bold'}}>Xóa</button>
-                        )}
-                    </div>
-                ))}
-            </div>
+            <JobCodeList 
+                jobCodes={jobCodes} 
+                isTotalAdmin={isTotalAdmin} 
+                userRole={user?.role} 
+                onDeleteJob={handleDeleteJob} 
+            />
         </div>
     );
 };
