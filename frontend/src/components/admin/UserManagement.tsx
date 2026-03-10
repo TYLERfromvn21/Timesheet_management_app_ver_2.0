@@ -101,10 +101,10 @@ export const UserManagement = () => {
             </div>
 
             {viewMode === 'create' ? (
-                <div style={{maxWidth: '500px', margin: '0 auto', paddingTop: '20px'}}>
-                    <CreateUserForm isFlow1={false} onSuccess={() => { fetchUsers(); setViewMode('list'); }} />
-                </div>
-            ) : (
+             <div style={{width: '100%', maxWidth: '500px', margin: '0 auto', padding: '20px 10px', boxSizing: 'border-box'}}>
+                  <CreateUserForm isFlow1={false} onSuccess={() => { fetchUsers(); setViewMode('list'); }} />
+                 </div>
+                ) : (
                 <>
                     {currentUser?.role === 'admin_total' && (
                         <div style={{marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px'}}>
@@ -139,7 +139,7 @@ export const UserManagement = () => {
                             <label style={{fontWeight:'bold'}}>Mật khẩu mới (Để trống nếu không đổi)</label>
                             <div style={{position: 'relative', marginTop:'5px'}}>
                                 <input type={showPassword ? "text" : "password"} value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} placeholder="******" style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}} />
-                                <span onClick={() => setShowPassword(!showPassword)} style={{position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none'}}>{showPassword ? '🙈' : '👁️'}</span>
+                                <span onClick={() => setShowPassword(!showPassword)} style={{position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none'}}>{showPassword ? 'Ẩn' : 'Hiện'}</span>
                             </div>
                         </div>
 

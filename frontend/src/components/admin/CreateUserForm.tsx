@@ -73,7 +73,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({ onSuccess, isFlo
         if (formData.role === 'admin_total') {
             const adminCount = users.filter(u => u.role === 'admin_total').length;
             if (!isFlow1 && adminCount >= 3) {
-                alert("⚠️ GIỚI HẠN: Hệ thống chỉ cho phép tối đa 3 Admin Tổng.");
+                alert("GIỚI HẠN: Hệ thống chỉ cho phép tối đa 3 Admin Tổng.");
                 return;
             }
         }

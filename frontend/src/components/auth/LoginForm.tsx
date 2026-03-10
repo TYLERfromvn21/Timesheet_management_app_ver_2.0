@@ -55,7 +55,7 @@ export const LoginForm: React.FC<Props> = ({ initialMessage }) => {
     };
 
     return (
-        <div className="login-form-wrapper" style={{width: '100%', maxWidth: '400px', padding: '20px'}}>
+        <div className="login-form-wrapper">
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>Tên đăng nhập</label>
@@ -87,14 +87,14 @@ export const LoginForm: React.FC<Props> = ({ initialMessage }) => {
                             role="button"
                             style={{
                                 position: 'absolute',
-                                right: '10px',
+                                right: '15px', 
                                 top: '50%',
                                 transform: 'translateY(-50%)',
                                 cursor: 'pointer',
                                 userSelect: 'none'
                             }}
                         >
-                            {showPassword ? '🙈' : '👁️'}
+                            {showPassword ? 'Ẩn' : 'Hiện'}
                         </span>
                     </div>
                 </div>

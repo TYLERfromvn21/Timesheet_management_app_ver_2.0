@@ -1,0 +1,191 @@
+/*frontend/src/styles/dashboard-mobile.css*/
+/*this file is use to import mobile-specific styles for the dashboard, 
+    overriding desktop styles as needed */
+/* Classes for mobile layout */
+.desktop-timeline { display: block; height: 100%; }
+.mobile-agenda { display: none; }
+
+@media (max-width: 768px) {
+    /* Unlock scrolling for the entire page */
+    .dashboard-body {
+        height: auto !important; 
+        min-height: 100vh;
+        overflow-y: auto !important; 
+        overflow-x: hidden;
+    }
+
+    /* Stack columns on top of each other (Flex Column) */
+    .dash-container {
+        flex-direction: column;
+        overflow: visible !important;
+        padding: 10px;
+    }
+
+    .main-panel, .admin-panel {
+        max-width: 100%;
+        width: 100%;
+        flex: none;
+        box-sizing: border-box;
+    }
+
+    .admin-panel {
+        margin-top: 10px; 
+    }
+
+    .task-list {
+        overflow-y: visible !important; 
+        height: auto;
+        border: none;
+        background: transparent;
+    }
+
+    /* change layout for mobile */
+    .desktop-timeline { display: none !important; }
+    .mobile-agenda { display: block !important; }
+}
+
+/* styles for mobile agenda */
+.agenda-item {
+    display: flex;
+    padding: 15px 10px;
+    margin-bottom: 10px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    align-items: flex-start;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.agenda-item:active {
+    transform: scale(0.98);
+    background-color: #fafafa;
+}
+
+.agenda-time {
+    flex: 0 0 75px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.agenda-time-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #b22222; 
+    margin-right: 6px;
+    box-shadow: 0 0 0 3px #ffebeb;
+}
+
+.agenda-content {
+    flex: 1;
+    padding-left: 15px;
+    border-left: 2px solid #ffebeb; 
+}
+.agenda-title {
+    font-weight: 700;
+    color: #b22222;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+.agenda-desc {
+    font-size: 0.85rem;
+    color: #555;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.empty-agenda {
+    padding: 40px 15px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px dashed #ccc;
+}
+
+/* optimize user table and create form for mobile */
+@media (max-width: 768px) {
+    /* make admin container responsive */
+    .admin-container {
+        width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    .create-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 20px 15px !important;
+        box-sizing: border-box !important;
+        border-radius: 8px !important;
+    }
+
+    /* make user table responsive */
+    .responsive-user-table, 
+    .responsive-user-table tbody { 
+        display: block; 
+        width: 100%; 
+        box-sizing: border-box;
+    }
+    
+    .responsive-user-table thead { 
+        display: none; 
+    }
+    
+    .responsive-user-table tr {
+        background: #fff; 
+        border: 1px solid #ddd; 
+        border-radius: 8px; 
+        margin-bottom: 15px; 
+        padding: 15px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .responsive-user-table td { 
+        border: none !important; 
+        padding: 0 !important; 
+        text-align: left !important; 
+    }
+    
+    /* columm 1: Username */
+    .td-username { 
+        grid-column: 1 / 2; 
+        font-size: 1.15rem; 
+        color: #b22222 !important; 
+        font-weight: bold;
+        word-wrap: break-word; 
+    }
+    
+    /* Column 2: Role */
+    .td-role { 
+        grid-column: 2 / 3; 
+        text-align: right;
+    }
+    
+    /* Column 3: Department */
+    .td-dept { 
+        grid-column: 1 / 3; 
+        margin-top: 5px;
+    }
+    
+    /* button for actions */
+    .td-action { 
+        grid-column: 1 / 3; 
+        border-top: 1px dashed #eee !important; 
+        margin-top: 5px; 
+        padding-top: 12px !important; 
+        display: flex;
+        justify-content: flex-end;
+    }
+}

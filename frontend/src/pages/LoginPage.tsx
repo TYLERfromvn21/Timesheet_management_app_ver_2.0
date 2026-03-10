@@ -20,18 +20,19 @@ export default function LoginPage() {
     }, []);
 
     return (
-        <div className="login-container">
-            {/* Left Panel: Branding */}
-            <div className="left-panel">
-                <div className="circle c1"></div>
-                <div className="circle c2"></div>
-                <h1>TÍN VIỆT TIMESHEET</h1>
-            </div>
+        <main className="login-page-wrapper">
+            <div className="login-container">
+                {/* Left Panel: Branding  */}
+                <div className="left-panel">
+                    <h1>TÍN VIỆT TIMESHEET MANAGEMENT</h1>
+                    <p>App quản lý thời gian công việc</p>
+                </div>
 
-            {/* Right Panel: Form */}
-            <div className="right-panel">
-                <LoginForm initialMessage={urlMessage} />
+                {/* Right Panel: Form */}
+                <div className="right-panel">
+                    <LoginForm initialMessage={urlMessage} />
+                </div>
             </div>
-        </div>
+        </main>
     );
 }

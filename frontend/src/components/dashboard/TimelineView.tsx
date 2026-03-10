@@ -3,6 +3,7 @@
 
 import React, { useMemo } from 'react';
 import '../../styles/dashboard.css'; 
+import '../../styles/dashboard-mobile.css';
 import type { Task } from '../../types/task.types';
 
 // Props for TimelineView component
@@ -13,13 +14,19 @@ interface Props {
 
 export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick }) => {
     
+    // Format time as HH:MM
+    const formatTime = (date: Date) => {
+        const h = date.getHours().toString().padStart(2, '0');
+        const m = date.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
+    };
+
     // function to render time slots from 6 AM to 10 PM
     const renderTimeSlots = () => {
         const slots = []; 
         for (let i = 6; i <= 22; i++) {
             slots.push(
                 <div key={i} className="time-slot">
-                    {/* FIX CONTRAST: Thêm style color #333 (Đen xám) và đậm để dễ đọc hơn */}
                     <span className="time-label" style={{ color: '#222', fontWeight: '600' }}>
                         {i}:00
                     </span>
@@ -29,7 +36,7 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
         return slots;
     };
 
-    // calculate task positions and render them on the timeline
+    // [DESKTOP] calculate task positions and render them on the timeline
     const taskElements = useMemo(() => {
         return tasks.map(t => {
             if (!t.start_time || !t.end_time) return null;
@@ -40,13 +47,6 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
             const startHour = s.getHours();
             const startPos = (startHour - 6) + s.getMinutes() / 60;
             const duration = (e.getTime() - s.getTime()) / 3600000;
-
-            // Format time as HH:MM
-            const formatTime = (date: Date) => {
-                const h = date.getHours().toString().padStart(2, '0');
-                const m = date.getMinutes().toString().padStart(2, '0');
-                return `${h}:${m}`;
-            };
             const timeRangeText = `${formatTime(s)} - ${formatTime(e)}`;
 
             if (startPos + duration < 0) return null; 
@@ -63,21 +63,11 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
                     role="button" 
                     tabIndex={0} 
                     onKeyDown={(e) => e.key === 'Enter' && onTaskClick(t)}
-                    aria-label={`Công việc ${t.job_code} từ ${timeRangeText}: ${t.task_description}`}
-                    
                     style={{
-                        position: 'absolute', 
-                        left: '60px', right: '10px', 
-                        top: `${displayTop}px`, 
-                        height: `${displayHeight}px`, 
-                        background: '#ffebeb', 
-                        borderLeft: '4px solid #b22222', 
-                        padding: '2px 8px', fontSize: '11px', cursor: 'pointer', 
-                        borderRadius: '4px', overflow: 'hidden', zIndex: 10,
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-                        transition: 'all 0.2s ease',
-                        color: '#8b0000' 
+                        position: 'absolute', left: '60px', right: '10px', top: `${displayTop}px`, height: `${displayHeight}px`, 
+                        background: '#ffebeb', borderLeft: '4px solid #b22222', padding: '2px 8px', fontSize: '11px', cursor: 'pointer', 
+                        borderRadius: '4px', overflow: 'hidden', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'all 0.2s ease', color: '#8b0000' 
                     }}
                     title={`${t.job_code} (${timeRangeText})`} 
                 >
@@ -90,12 +80,49 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
                 </div>
             );
         });
-    }, [tasks]);
+    }, [tasks, onTaskClick]);
+
+    // [MOBILE] Render Agenda List 
+    const mobileAgendaElements = useMemo(() => {
+        if (tasks.length === 0) {
+            return <div className="empty-agenda">Không có công việc nào trong ngày.</div>;
+        }
+
+        // Sort tasks by start time
+        const sortedTasks = [...tasks].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+
+        return sortedTasks.map(t => {
+            if (!t.start_time || !t.end_time) return null;
+            const s = new Date(t.start_time);
+            const e = new Date(t.end_time);
+
+            return (
+                <div key={`mob-${t.id}`} className="agenda-item" onClick={() => onTaskClick(t)}>
+                    <div className="agenda-time">
+                        <div style={{fontWeight: 'bold', color: '#333'}}>
+                            <span className="agenda-time-dot"></span>{formatTime(s)}
+                        </div>
+                        <div style={{color: '#888', paddingLeft: '14px', fontSize: '0.8rem'}}>{formatTime(e)}</div>
+                    </div>
+                    <div className="agenda-content">
+                        <div className="agenda-title">{t.job_code || 'Chưa có mã Job'}</div>
+                        <div className="agenda-desc">{t.task_description}</div>
+                    </div>
+                </div>
+            );
+        });
+    }, [tasks, onTaskClick]);
 
     return (
-        <div className="task-list" style={{ position: 'relative' }}>
-            {renderTimeSlots()}
-            {taskElements}
-        </div>
+        <>
+            <div className="desktop-timeline" style={{ position: 'relative' }}>
+                {renderTimeSlots()}
+                {taskElements}
+            </div>
+
+            <div className="mobile-agenda">
+                {mobileAgendaElements}
+            </div>
+        </>
     );
 });
