@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 // Main seeding function
 async function main() {
-  console.log('🌱 Start seeding...');
+  console.log(' Start seeding...');
 
   // 1. create default departments
   const departments = [
@@ -27,7 +27,7 @@ async function main() {
       create: dept,
     });
   }
-  console.log('✅ Created Default Departments');
+  console.log(' Created Default Departments');
 
   // 3. create an admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -45,7 +45,7 @@ async function main() {
     },
   });
   
-  console.log('✅ Created Admin User: admin / admin123');
+  console.log(' Created Admin User: admin / admin123');
 }
 
 /// Execute the main function

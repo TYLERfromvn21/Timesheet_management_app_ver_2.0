@@ -5,7 +5,7 @@
 .desktop-timeline { display: block; height: 100%; }
 .mobile-agenda { display: none; }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
     /* Unlock scrolling for the entire page */
     .dashboard-body {
         height: auto !important; 
@@ -111,7 +111,7 @@
 }
 
 /* optimize user table and create form for mobile */
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
     /* make admin container responsive */
     .admin-container {
         width: 100%;

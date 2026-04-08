@@ -10,11 +10,11 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 // Start the server
-const server = app.listen(PORT, () => {
+const server = app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`
-  🚀 Server is running!
-  📡 API URL: http://localhost:${PORT}
-  ⭐️ Environment: ${process.env.NODE_ENV}
+   Server is running!
+   API URL: http://0.0.0.0:${PORT}
+   Environment: ${process.env.NODE_ENV}
   `);
 });
 

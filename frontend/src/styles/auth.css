@@ -191,7 +191,7 @@
 /* =========================================
    MOBILE STYLES 
    ========================================= */
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
     .login-page-wrapper {
         height: auto;
         min-height: 100vh;
