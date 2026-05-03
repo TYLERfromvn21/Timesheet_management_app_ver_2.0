@@ -1,10 +1,11 @@
 // frontend/src/pages/DashboardPage.tsx
 // this file is the main dashboard page for the timesheet management app.
 //  It displays the user's tasks in a timeline view,
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { useUserStore } from '../store/userStore';
+import apiClient from '../services/api.client';
 
 
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
@@ -27,19 +28,28 @@ export default function DashboardPage() {
     const [editTask, setEditTask] = useState<any>(null);
     const [modalReportType, setModalReportType] = useState<'USER' | 'JOB' | null>(null);
     const [modalDeptOpen, setModalDeptOpen] = useState(false);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [deadlineDate, setDeadlineDate] = useState<string | null>(null);
 
     //function to initialize dashboard data on component mount
     useEffect(() => {
         const initDashboard = async () => {
-            await checkAuth();
-            const currentUser = useAuthStore.getState().user;
-            if (currentUser) {
-                const promises = [];
-                promises.push(fetchTasks(currentUser.id));
-                if (currentUser.role === 'admin_total') {
-                    promises.push(fetchDepartments());
+            try {
+                setIsInitialLoading(true);
+                await checkAuth();
+                const currentUser = useAuthStore.getState().user;
+                if (currentUser) {
+                    const promises = [];
+                    promises.push(fetchTasks(currentUser.id));
+                    if (currentUser.role === 'admin_total') {
+                        promises.push(fetchDepartments());
+                    }
+                    await Promise.all(promises);
                 }
-                await Promise.all(promises);
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+            } finally {
+                setIsInitialLoading(false);
             }
         };
         initDashboard();
@@ -48,16 +58,25 @@ export default function DashboardPage() {
     //function to refetch tasks when selected date changes
     useEffect(() => {
         if (user) fetchTasks(user.id);
-    }, [selectedDate]); 
+    }, [selectedDate, user]); 
 
-    //function to navigate between dates in the dashboard
-    const handleAddDays = (days: number) => {
-        const d = new Date(selectedDate);
-        d.setDate(d.getDate() + days);
-        setDate(d);
-    };
+    //function to fetch deadline date from backend
+    useEffect(() => {
+        const fetchDeadline = async () => {
+            try {
+                // const response = await fetch('http://localhost:3000/api/config/deadline');
+                // const data = await response.json();
+                // setDeadlineDate(data.deadlineDate);
+                const response = await apiClient.get('/config/deadline');
+                setDeadlineDate(response.data.deadlineDate);
+            } catch (error) {
+                console.error('Error fetching deadline:', error);
+            }
+        };
+        fetchDeadline();
+    }, []);
 
-    if (!user) return <div className="loading">Đang tải dữ liệu...</div>;
+    if (isInitialLoading || !user) return <div className="loading">Đang tải dữ liệu...</div>;
 
     const isAdmin = user.role === 'admin_total' || user.role === 'admin_dept';
 
@@ -70,9 +89,45 @@ export default function DashboardPage() {
             <div className="dash-container">
                 <div className="main-panel">
                     <div className="date-nav">
-                        <button className="btn-nav" onClick={() => handleAddDays(-1)}>❮ Hôm qua</button>
-                        <h2>{selectedDate.toLocaleDateString('vi-VN')}</h2>
-                        <button className="btn-nav" onClick={() => handleAddDays(1)}>Ngày mai ❯</button>
+                        <input 
+                            type="date" 
+                            value={selectedDate && !isNaN(selectedDate.getTime()) ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} 
+                            onChange={(e) => {
+                                if (e.target.value) { 
+                                    setDate(new Date(e.target.value));
+                                }
+                            }}
+                            style={{ 
+                                padding: '8px 12px', 
+                                fontSize: '1rem', 
+                                border: '1px solid #ccc', 
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        />
+
+                         {deadlineDate && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+                    border: '2px solid #ff9800',
+                    borderRadius: '4px',
+                    padding: '7px 15px',
+                    margin: '15px auto',
+                    maxWidth: '1200px',
+                    boxShadow: '0 2px 8px rgba(255, 152, 0, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    color: '#e65100'
+                }}>
+                    <span style={{ fontSize: '1.0rem' }}>Deadline</span>
+                    <span>
+                        Khai báo bổ sung cho tháng 1-4/2026: <strong>{new Date(deadlineDate).toLocaleDateString('vi-VN')}</strong>
+                    </span>
+                </div>
+            )}
                     </div>
                     
                     <div className="task-list" style={{ position: 'relative', minHeight: '300px' }}>

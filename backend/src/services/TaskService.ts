@@ -34,15 +34,32 @@ export const TaskService = {
 
   //function to save (create or update) a task
   saveTask: async (data: any) => {
-    // Check curfew restriction before allowing save
-    if (CurfewService.isRestricted()) {
-        throw new Error('Ngoài giờ khai báo!');
-    }
     const startDateTime = new Date(data.startTime);
     const endDateTime = new Date(data.endTime);
     const taskDate = new Date(data.date);
     
-    taskDate.setHours(12, 0, 0, 0); 
+    taskDate.setHours(12, 0, 0, 0);
+
+    // Define cutoff date for supplementary entry (April 30, 2026)
+    const cutoffDate = new Date('2026-04-30');
+    cutoffDate.setHours(23, 59, 59, 999);
+
+    // For supplementary entry (Jan-Apr 2026): skip curfew, only check deadline
+    if (taskDate <= cutoffDate) {
+        const deadlineDateStr = process.env.DEADLINE_DATE;
+        if (deadlineDateStr) {
+            const deadlineDate = new Date(deadlineDateStr);
+            deadlineDate.setHours(23, 59, 59, 999);
+            if (new Date() > deadlineDate) {
+                throw new Error('Đã hết hạn nhập bổ sung timesheet!');
+            }
+        }
+    } else {
+        // For normal entry (May 2026 onwards): check curfew only
+        if (CurfewService.isRestricted()) {
+            throw new Error('Ngoài giờ khai báo!');
+        }
+    }
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         throw new Error('Định dạng thời gian không hợp lệ');

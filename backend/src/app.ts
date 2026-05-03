@@ -18,18 +18,13 @@ import reportRoutes from './routes/reportRoutes';
 const app: Express = express();
 
 app.set('trust proxy', 1);
-// check if anyone is trying to access the server without providing a valid API key
-const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, 
-	max: 100, 
-	standardHeaders: true, 
-	legacyHeaders: false,
-	message: 'Bạn gửi quá nhiều yêu cầu! Vui lòng thử lại sau 15 phút.'
-});
+
 
 // Middleware
-app.use(helmet());
-app.use(limiter);
+if (process.env.NODE_ENV !== 'development') {
+    app.use(helmet());
+}
+
 
 app.use(cors({
     origin: [
@@ -42,6 +37,15 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+const apiLimiter = rateLimit({
+	windowMs: 5 * 60 * 1000, 
+	max: 3000, 
+	standardHeaders: true, 
+	legacyHeaders: false,
+	message: 'Hệ thống đang quá tải, bạn đợi 5 phút rồi F5 lại'
+});
+
+app.use(apiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -57,6 +61,12 @@ app.use('/api/reports', reportRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'Backend is awake!' });
+});
+
+// Get deadline date configuration
+app.get('/api/config/deadline', (req, res) => {
+    const deadlineDate = process.env.DEADLINE_DATE;
+    res.status(200).json({ deadlineDate: deadlineDate || null });
 });
 
 // 404 handler

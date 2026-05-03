@@ -4,7 +4,7 @@
 import app from './app';
 import dotenv from 'dotenv';
 import prisma from './config/prisma';
-// Load environment variables from .env file
+// Load environment variables from .env file BEFORE importing app
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;

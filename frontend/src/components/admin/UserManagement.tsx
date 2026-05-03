@@ -2,7 +2,7 @@
 // this file contains the user management component for admin users
 // and includes fixes for filtering users by department and displaying department names
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../store/userStore';
 import { useAuthStore } from '../../store/authStore';
@@ -21,7 +21,7 @@ export const UserManagement = () => {
     
     // Edit Modal State
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [editForm, setEditForm] = useState<{id: string; username: string; password: string; departmentIds: string[]; role: string}>({ id: '', username: '', password: '', departmentIds: [], role: '' });
+    const [editForm, setEditForm] = useState<{id: string; username: string; password: string; departmentIds: string[]; role: string; hasPassword: boolean}>({ id: '', username: '', password: '', departmentIds: [], role: '', hasPassword: false });
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
@@ -57,7 +57,8 @@ export const UserManagement = () => {
             username: u.username, 
             password: '', 
             role: u.role,
-            departmentIds: u.departmentIds || u.departments?.map((d:any)=>d.id) || [] 
+            departmentIds: u.departmentIds || u.departments?.map((d:any)=>d.id) || [],
+            hasPassword: true // indicate that user has a password (cannot show actual password for security)
         });
         setIsEditOpen(true);
     };
@@ -76,6 +77,7 @@ export const UserManagement = () => {
         await updateUser(editForm.id, { 
             username: editForm.username, 
             password: editForm.password || undefined,
+            role: editForm.role,
             departmentIds: editForm.departmentIds 
         });
         setIsEditOpen(false);
@@ -138,10 +140,20 @@ export const UserManagement = () => {
                         <div className="form-group" style={{marginTop: '15px'}}>
                             <label style={{fontWeight:'bold'}}>Mật khẩu mới (Để trống nếu không đổi)</label>
                             <div style={{position: 'relative', marginTop:'5px'}}>
-                                <input type={showPassword ? "text" : "password"} value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} placeholder="******" style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}} />
+                                <input type={showPassword ? "text" : "password"} value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} placeholder={editForm.hasPassword ? "••••••••" : "Nhập mật khẩu mới"} style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}} />
                                 <span onClick={() => setShowPassword(!showPassword)} style={{position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none'}}>{showPassword ? 'Ẩn' : 'Hiện'}</span>
                             </div>
                         </div>
+
+                        {editForm.role !== 'admin_total' && (
+                            <div className="form-group" style={{marginTop: '15px'}}>
+                                <label style={{fontWeight:'bold'}}>Vai trò</label>
+                                <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px', marginTop:'5px'}}>
+                                    <option value="user">Nhân viên</option>
+                                    <option value="admin_dept">Quản lý Phòng ban</option>
+                                </select>
+                            </div>
+                        )}
 
                         {editForm.role !== 'admin_total' && (
                             <div className="form-group" style={{marginTop: '15px'}}>

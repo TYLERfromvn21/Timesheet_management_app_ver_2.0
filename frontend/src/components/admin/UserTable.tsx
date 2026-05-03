@@ -61,8 +61,8 @@ export const UserTable: React.FC<UserTableProps> = ({ users, currentUser, onEdit
                             
                             {currentUser?.role === 'admin_total' && (
                                 <td className="td-action" style={{padding: '12px', textAlign: 'center'}}>
-                                    <button onClick={() => onEdit(u)} style={{marginRight:'15px', border:'none', background:'none', cursor:'pointer', fontSize:'1.2rem'}} title="Sửa">✏️</button>
-                                    <button onClick={() => onDelete(u.id)} style={{border:'none', background:'none', cursor:'pointer', fontSize:'1.2rem'}} title="Xóa">🗑️</button>
+                                    <button onClick={() => onEdit(u)} style={{marginRight:'15px', padding:'6px 12px', background:'#f0f0f0', border:'1px solid #ccc', borderRadius:'4px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'bold'}}>Sửa</button>
+                                    <button onClick={() => onDelete(u.id)} style={{padding:'6px 12px', background:'#ffebee', border:'1px solid #ef9a9a', borderRadius:'4px', cursor:'pointer', fontSize:'0.9rem', fontWeight:'bold', color:'#c62828'}}>Xóa</button>
                                 </td>
                             )}
                         </tr>

@@ -74,5 +74,5 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     } catch (err) {
       throw err;
     }
-  }
+  },
 }));

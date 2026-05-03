@@ -72,6 +72,11 @@ export const UserService = {
       updateData.password = await bcrypt.hash(data.password, 8);
     }
 
+    // handle role update (only allow changing between USER and ADMIN_DEPT)
+    if (data.role && (data.role === 'user' || data.role === 'admin_dept')) {
+      updateData.role = data.role === 'admin_dept' ? 'ADMIN_DEPT' : 'USER';
+    }
+
     if (data.departmentIds && Array.isArray(data.departmentIds)) {
       updateData.departments = {
         set: data.departmentIds.map((deptId: string) => ({ id: deptId }))
