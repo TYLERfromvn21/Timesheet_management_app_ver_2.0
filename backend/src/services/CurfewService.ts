@@ -4,11 +4,13 @@ export const CurfewService = {
 
     isRestricted: (): boolean => {
         const now = new Date();
-        const hour = now.getHours();
+        // Get UTC hour and convert to Vietnam time (UTC+7)
+        const utcHour = now.getUTCHours();
+        const vietnamHour = (utcHour + 7) % 24;
         
-        // if current time is between 11 PM and 6 AM, return true 
+        // if current time is between 11 PM and 6 AM (Vietnam time), return true 
         // for restricted curfew period
-        if (hour >= 23 || hour < 6) {
+        if (vietnamHour >= 23 || vietnamHour < 6) {
             return true;
         }
         return false;
