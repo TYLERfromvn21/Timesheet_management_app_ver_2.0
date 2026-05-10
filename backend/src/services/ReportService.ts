@@ -71,12 +71,19 @@ export const ReportService = {
         if (rawDailyTasks.length > 0) {
             // logic to merge tasks by job code
             const mergedTasks: any = {};
+            // Adjust for Vietnam timezone (UTC+7)
+            const vietnamOffset = 7 * 60 * 60 * 1000;
             rawDailyTasks.forEach(t => {
                 const code = t.jobCode;
                 const duration = (t.endTime.getTime() - t.startTime.getTime()) / 3600000;
                 
-                const startStr = t.startTime.toISOString().split('T')[1].substr(0,5);
-                const endStr = t.endTime.toISOString().split('T')[1].substr(0,5);
+                // Adjust times for Vietnam timezone
+                const localOffset = t.startTime.getTimezoneOffset() * 60 * 1000;
+                const adjustedStart = new Date(t.startTime.getTime() - localOffset - vietnamOffset);
+                const adjustedEnd = new Date(t.endTime.getTime() - localOffset - vietnamOffset);
+                
+                const startStr = adjustedStart.toISOString().split('T')[1].substr(0,5);
+                const endStr = adjustedEnd.toISOString().split('T')[1].substr(0,5);
                 const timeStr = `${startStr}-${endStr}`;
                 
                 if (!mergedTasks[code]) {

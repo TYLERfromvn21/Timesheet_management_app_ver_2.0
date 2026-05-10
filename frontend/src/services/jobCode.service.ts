@@ -24,5 +24,11 @@ export const jobCodeService = {
   delete: async (jobId: string) => {
     const response = await apiClient.post<ApiResponse<void>>('/job-codes/delete', { job_id: jobId });
     return response.data;
+  },
+
+  // POST /jobs/update -> update a job code by ID
+  update: async (jobId: string, data: { job_code?: string, task_description?: string }) => {
+    const response = await apiClient.post<ApiResponse<JobCode>>('/job-codes/update', { job_id: jobId, ...data });
+    return response.data;
   }
 };

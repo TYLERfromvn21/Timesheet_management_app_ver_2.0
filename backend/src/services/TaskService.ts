@@ -20,25 +20,40 @@ export const TaskService = {
       orderBy: { startTime: 'asc' }
     });
 
-    return tasks.map(t => ({
-      id: t.id,
-      task_id: t.id,
-      department: t.department,
-      job_code: t.jobCode,
-      task_description: t.taskDescription,
-      start_time: t.startTime.toISOString(),
-      end_time: t.endTime.toISOString(),
-      date: t.date.toISOString()
-    }));
+    // Adjust for Vietnam timezone (UTC+7) when returning times
+    const vietnamOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+
+    return tasks.map(t => {
+      const localOffset = t.startTime.getTimezoneOffset() * 60 * 1000;
+      const adjustedStart = new Date(t.startTime.getTime() - localOffset - vietnamOffset);
+      const adjustedEnd = new Date(t.endTime.getTime() - localOffset - vietnamOffset);
+      
+      return {
+        id: t.id,
+        task_id: t.id,
+        department: t.department,
+        job_code: t.jobCode,
+        task_description: t.taskDescription,
+        start_time: adjustedStart.toISOString(),
+        end_time: adjustedEnd.toISOString(),
+        date: t.date.toISOString()
+      };
+    });
   },
 
   //function to save (create or update) a task
   saveTask: async (data: any) => {
     const startDateTime = new Date(data.startTime);
     const endDateTime = new Date(data.endTime);
-    const taskDate = new Date(data.date);
     
-    taskDate.setHours(12, 0, 0, 0);
+    // Use the date from startTime for deadline checking, but keep original time
+    const taskDate = new Date(startDateTime);
+    
+    // Adjust for Vietnam timezone (UTC+7) if needed
+    const vietnamOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+    const localOffset = startDateTime.getTimezoneOffset() * 60 * 1000;
+    const adjustedStart = new Date(startDateTime.getTime() + localOffset + vietnamOffset);
+    const adjustedEnd = new Date(endDateTime.getTime() + localOffset + vietnamOffset);
 
     // Define cutoff date for supplementary entry (April 30, 2026)
     const cutoffDate = new Date('2026-04-30');
@@ -75,8 +90,8 @@ export const TaskService = {
         department: data.department,
         jobCode: data.jobCode,
         taskDescription: data.taskDescription,
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: adjustedStart,
+        endTime: adjustedEnd,
         date: taskDate,
         userId: data.userId
       };

@@ -9,9 +9,11 @@ const router: Router = Router();
 // 1. Route to get job codes by department
 // 2. Route to save a new job code
 // 3. Route to delete a job code
+// 4. Route to update a job code
 
 router.get('/:dept', JobCodeController.getByDept);
 router.post('/save', JobCodeController.create);
 router.post('/delete', JobCodeController.delete);
+router.post('/update', JobCodeController.update);
 
 export default router;

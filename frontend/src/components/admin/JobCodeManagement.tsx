@@ -11,7 +11,11 @@ import { jobCodeService } from '../../services/jobCode.service';
 import { CreateJobCodeForm } from './CreateJobCodeForm';
 import { JobCodeList } from './JobCodeList';
 
-export const JobCodeManagement = () => {
+interface JobCodeManagementProps {
+    hideList?: boolean;
+}
+
+export const JobCodeManagement: React.FC<JobCodeManagementProps> = ({ hideList = false }) => {
     const { user } = useAuthStore();
     const { departments, fetchDepartments } = useUserStore();
     const { jobCodes, fetchJobCodes } = useTaskStore();
@@ -102,12 +106,14 @@ export const JobCodeManagement = () => {
                 />
             )}
 
-            <JobCodeList 
-                jobCodes={jobCodes} 
-                isTotalAdmin={isTotalAdmin} 
-                userRole={user?.role} 
-                onDeleteJob={handleDeleteJob} 
-            />
+            {!hideList && (
+                <JobCodeList 
+                    jobCodes={jobCodes} 
+                    isTotalAdmin={isTotalAdmin} 
+                    userRole={user?.role} 
+                    onDeleteJob={handleDeleteJob} 
+                />
+            )}
         </div>
     );
 };

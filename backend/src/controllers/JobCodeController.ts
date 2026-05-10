@@ -34,5 +34,15 @@ export const JobCodeController = {
     } catch (error) {
       res.status(500).json({ error: 'Lỗi xóa Job' });
     }
+  },
+
+  //function to update a job code
+  update: async (req: Request, res: Response) => {
+    try {
+      const updatedJob = await JobCodeService.update(req.body.job_id, req.body);
+      res.json({ message: 'Cập nhật Job thành công', data: updatedJob });
+    } catch (error) {
+      res.status(500).json({ error: 'Lỗi cập nhật Job (Có thể mã trùng)' });
+    }
   }
 };

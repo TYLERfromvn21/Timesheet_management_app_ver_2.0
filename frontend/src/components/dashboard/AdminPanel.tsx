@@ -12,9 +12,10 @@ import { JobCodeManagement } from '../admin/JobCodeManagement';
 interface AdminPanelProps {
     setModalReportType: (type: 'USER' | 'JOB' | null) => void;
     setModalDeptOpen: (isOpen: boolean) => void;
+    setModalJobCodeOpen: (isOpen: boolean) => void;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setModalDeptOpen }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setModalDeptOpen, setModalJobCodeOpen }) => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const isTotalAdmin = user?.role === 'admin_total';
@@ -24,7 +25,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setM
         <div className="admin-panel">
             <h3 style={{color: '#b22222', borderBottom: '1px solid #eee', paddingBottom:'10px'}}>QUẢN TRỊ VIÊN</h3>
             
-            <JobCodeManagement />
+            <JobCodeManagement hideList={true} />
+            
+            <div className="job-code-control" style={{marginTop: '15px'}}>
+                <label><strong>DANH SÁCH JOBCODE</strong></label>
+                <button className="btn-action" style={{background:'#17a2b8'}} onClick={() => setModalJobCodeOpen(true)}>
+                    Xem & Quản lý Jobcode
+                </button>
+            </div>
             
             {isTotalAdmin && (
                 <div className="report-control">

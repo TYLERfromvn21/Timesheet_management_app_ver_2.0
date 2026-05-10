@@ -15,6 +15,7 @@ import { TimelineView } from '../components/dashboard/TimelineView';
 import { DepartmentManagement } from '../components/admin/DepartmentManagement';
 import { ReportGenerator } from '../components/reports/ReportGenerator';
 import { TaskForm } from '../components/timesheet/TaskForm';
+import { JobCodeManagementModal } from '../components/admin/JobCodeManagementModal';
 
 import '../styles/dashboard.css';
 import '../styles/dashboard-mobile.css';
@@ -28,6 +29,7 @@ export default function DashboardPage() {
     const [editTask, setEditTask] = useState<any>(null);
     const [modalReportType, setModalReportType] = useState<'USER' | 'JOB' | null>(null);
     const [modalDeptOpen, setModalDeptOpen] = useState(false);
+    const [modalJobCodeOpen, setModalJobCodeOpen] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [deadlineDate, setDeadlineDate] = useState<string | null>(null);
 
@@ -137,13 +139,14 @@ export default function DashboardPage() {
                 </div>
 
                 {isAdmin && (
-                    <AdminPanel setModalReportType={setModalReportType} setModalDeptOpen={setModalDeptOpen} />
+                    <AdminPanel setModalReportType={setModalReportType} setModalDeptOpen={setModalDeptOpen} setModalJobCodeOpen={setModalJobCodeOpen} />
                 )}
             </div>
 
-            {modalTaskOpen && <TaskForm isOpen={modalTaskOpen} onClose={() => setModalTaskOpen(false)} editTask={editTask} date={selectedDate} />}
+            {modalTaskOpen && <TaskForm isOpen={modalTaskOpen} onClose={() => setModalTaskOpen(false)} editTask={editTask} date={editTask?.date ? new Date(editTask.date) : selectedDate} />}
             {modalReportType && <ReportGenerator type={modalReportType} onClose={() => setModalReportType(null)} />}
             {modalDeptOpen && <DepartmentManagement onClose={() => setModalDeptOpen(false)} />}
+            {modalJobCodeOpen && <JobCodeManagementModal isOpen={modalJobCodeOpen} onClose={() => setModalJobCodeOpen(false)} />}
         </main>
     );
 }

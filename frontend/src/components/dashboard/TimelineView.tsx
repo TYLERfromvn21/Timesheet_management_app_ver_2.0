@@ -38,7 +38,14 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
 
     // [DESKTOP] calculate task positions and render them on the timeline
     const taskElements = useMemo(() => {
-        return tasks.map(t => {
+        // Sort tasks by start time to handle consecutive short tasks
+        const sortedTasks = [...tasks].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+        
+        // Track vertical offset for consecutive short tasks
+        let shortTaskStackOffset = 0;
+        let lastTaskEnd = 0;
+
+        return sortedTasks.map(t => {
             if (!t.start_time || !t.end_time) return null;
             const s = new Date(t.start_time);
             const e = new Date(t.end_time);
@@ -51,9 +58,32 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
 
             if (startPos + duration < 0) return null; 
 
-            const displayTop = startPos < 0 ? 0 : startPos * 50;
-            const realDuration = startPos < 0 ? duration + startPos : duration;
-            const displayHeight = realDuration * 50;
+            // Check if task is very short (less than 15 minutes)
+            const isShortTask = duration < 0.25;
+            
+            let displayTop, displayHeight;
+            
+            if (isShortTask) {
+                // For short tasks, expand height to show full info and stack consecutive short tasks
+                const currentStart = startPos;
+                
+                // Reset stack offset if there's a gap between tasks (more than 5 minutes)
+                if (currentStart > lastTaskEnd + 0.083) {
+                    shortTaskStackOffset = 0;
+                }
+                
+                displayTop = (currentStart * 50) + shortTaskStackOffset;
+                displayHeight = Math.max(duration * 50, 60); // Minimum 60px height for short tasks
+                lastTaskEnd = currentStart + duration;
+                shortTaskStackOffset += displayHeight + 5; // Stack below with 5px gap
+            } else {
+                // Normal task positioning
+                displayTop = startPos < 0 ? 0 : startPos * 50;
+                const realDuration = startPos < 0 ? duration + startPos : duration;
+                displayHeight = realDuration * 50;
+                shortTaskStackOffset = 0; // Reset stack offset for normal tasks
+                lastTaskEnd = startPos + duration;
+            }
 
             if (displayHeight <= 0) return null;
 
@@ -65,16 +95,16 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
                     onKeyDown={(e) => e.key === 'Enter' && onTaskClick(t)}
                     style={{
                         position: 'absolute', left: '60px', right: '10px', top: `${displayTop}px`, height: `${displayHeight}px`, 
-                        background: '#ffebeb', borderLeft: '4px solid #b22222', padding: '2px 8px', fontSize: '11px', cursor: 'pointer', 
-                        borderRadius: '4px', overflow: 'hidden', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                        display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'all 0.2s ease', color: '#8b0000' 
+                        background: '#ffebeb', borderLeft: '4px solid #b22222', padding: '4px 8px', fontSize: '11px', cursor: 'pointer', 
+                        borderRadius: '4px', overflow: 'visible', zIndex: 10, boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', transition: 'all 0.2s ease', color: '#8b0000' 
                     }}
                     title={`${t.job_code} (${timeRangeText})`} 
                 >
-                    <div style={{fontWeight:'bold', color:'#8b0000'}}>
+                    <div style={{fontWeight:'bold', color:'#8b0000', marginBottom: '2px'}}>
                         {t.job_code || 'No Code'} <span style={{color:'#222', fontWeight:'normal'}}>({timeRangeText})</span>
                     </div>
-                    <div style={{whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', color:'#222'}}>
+                    <div style={{whiteSpace:'normal', overflow:'visible', color:'#222', lineHeight: '1.3'}}>
                         {t.task_description}
                     </div>
                 </div>

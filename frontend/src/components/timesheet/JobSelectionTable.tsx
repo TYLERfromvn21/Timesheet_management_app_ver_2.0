@@ -17,7 +17,7 @@ export const JobSelectionTable: React.FC<JobSelectionTableProps> = ({
     onSelectJob 
 }) => {
     return (
-        <div style={{maxHeight:'200px', overflowY:'auto', border:'1px solid #eee'}}>
+        <div style={{height:'100%', overflowY:'auto', border:'1px solid #eee'}}>
             <table className="job-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem'}}>
                 <thead>
                     <tr style={{background: '#f5f5f5', textAlign: 'left'}}>

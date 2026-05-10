@@ -14,7 +14,8 @@ export const JobCodeService = {
       where: { 
         department: { in: deptsArray }, 
         isDeleted: false // soft delete
-      }
+      },
+      orderBy: { jobCode: 'asc' }
     });
     
     return jobs.map(j => ({
@@ -42,6 +43,17 @@ export const JobCodeService = {
     return await prisma.jobCode.update({
       where: { id },
       data: { isDeleted: true } 
+    });
+  },
+
+  // function to update a job code
+  update: async (id: string, data: { job_code?: string, task_description?: string }) => {
+    return await prisma.jobCode.update({
+      where: { id },
+      data: {
+        ...(data.job_code && { jobCode: data.job_code }),
+        ...(data.task_description && { taskDescription: data.task_description })
+      }
     });
   }
 };
