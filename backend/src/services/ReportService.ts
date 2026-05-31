@@ -194,27 +194,42 @@ export const ReportService = {
     const colors = ['FFB22222', 'FF2E8B57', 'FF4169E1', 'FFDAA520', 'FF8E44AD', 'FFF39C12'];
 
     // function to process data for summary tables
+    // function to process data for summary tables, including all job codes (charged or uncharged)
     const processData = (filterDeptId: string | null) => {
+        const allJobCodesInScope = jobs.filter(j => 
+            filterDeptId ? j.department === filterDeptId : true
+        );
+
         const map: any = {};
+        
+        // Initialize map with all job codes, even if no tasks recorded for the month
+        allJobCodesInScope.forEach(job => {
+            const key = job.jobCode;
+            const staticDesc = jobMap.get(`${job.department}_${job.jobCode}`) || '';
+            map[key] = {
+                code: job.jobCode,
+                desc: staticDesc,
+                dept: job.department,
+                totalTime: 0,
+                users: new Set(),
+                dates: new Set() // New: to collect dates for summary if needed
+            };
+        });
+
+        // Populate with actual task data if available
         tasks.forEach(t => {
             if (filterDeptId && t.department !== filterDeptId) return;
             
             const key = t.jobCode;
-            const staticDesc = jobMap.get(`${t.department}_${t.jobCode}`) || '';
             const duration = t.endTime.getTime() - t.startTime.getTime();
             const userName = userMap.get(t.userId) || 'Unknown';
+            const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
 
-            if (!map[key]) {
-                map[key] = {
-                    code: t.jobCode,
-                    desc: staticDesc,
-                    dept: t.department, 
-                    totalTime: 0,
-                    users: new Set()
-                };
+            if (map[key]) { // Only update if the job code exists in allJobCodesInScope
+                map[key].totalTime += duration;
+                map[key].users.add(userName);
+                map[key].dates.add(taskDate); // New: add date to set
             }
-            map[key].totalTime += duration;
-            map[key].users.add(userName);
         });
         return Object.values(map).sort((a:any, b:any) => a.code.localeCompare(b.code));
     };
@@ -276,10 +291,12 @@ export const ReportService = {
         const sheet = workbook.addWorksheet(sheetName);
         
         // Header
+        // Define columns for the detailed department sheet
         sheet.columns = [
             { header: 'Mã Job', key: 'code', width: 20 }, 
             { header: 'Nội dung Job', key: 'desc', width: 35 },
             { header: 'Nhân viên thực hiện', key: 'user', width: 30 }, 
+            { header: 'Ngày thực hiện', key: 'dates', width: 30 }, // New column for task dates
             { header: 'Tổng thời gian (h)', key: 'time', width: 20 }
         ];
         const r1 = sheet.getRow(1);
@@ -289,7 +306,7 @@ export const ReportService = {
         // filter tasks for this department
         const deptTasks = tasks.filter(t => t.department === d.id);
         
-        // Group by Job + User
+        // Group by Job + User and collect dates
         const detailMap: any = {}; 
         deptTasks.forEach(t => {
             const uName = userMap.get(t.userId) || 'Unknown';
@@ -297,22 +314,73 @@ export const ReportService = {
             
             if (!detailMap[k]) {
                 const staticDesc = jobMap.get(`${t.department}_${t.jobCode}`) || '';
-                detailMap[k] = { time: 0, desc: staticDesc };
+                detailMap[k] = { time: 0, desc: staticDesc, dates: [] }; // Initialize dates array
             }
             detailMap[k].time += (t.endTime.getTime() - t.startTime.getTime());
+            // Add unique date to the dates array
+            const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+            if (!detailMap[k].dates.includes(taskDate)) {
+                detailMap[k].dates.push(taskDate);
+            }
         });
         
-        // sort and add rows
+        // Sort and add rows to the detailed department sheet
         Object.keys(detailMap).sort().forEach(key => {
             const [job, user] = key.split('|');
-            sheet.addRow({ 
+            const item = detailMap[key];
+            const row = sheet.addRow({ 
                 code: job, 
-                desc: detailMap[key].desc || '', 
+                desc: item.desc || '', 
                 user: user, 
-                time: (detailMap[key].time / 3600000).toFixed(2) 
+                dates: item.dates.sort().join(',\n'), // Join unique dates for display
+                time: (item.time / 3600000).toFixed(2) 
             });
+            row.getCell('dates').alignment = { vertical: 'middle', wrapText: true };
+        });
+
+        // Handle uncharged job codes for this department in the detailed sheet
+        const allDepartmentJobs = jobs.filter(j => j.department === d.id);
+        allDepartmentJobs.forEach(job => {
+            let hasChargedTime = false;
+            for (const key in detailMap) {
+                const [jobCodeInMap, ] = key.split('|');
+                if (jobCodeInMap === job.jobCode) {
+                    hasChargedTime = true;
+                    break;
+                }
+            }
+            if (!hasChargedTime) {
+                sheet.addRow({
+                    code: job.jobCode,
+                    desc: jobMap.get(`${job.department}_${job.jobCode}`) || '',
+                    user: '(No employees assigned)', // English comment
+                    dates: '(No dates recorded)', // English comment
+                    time: '0.00'
+                }).eachCell(cell => {
+                    cell.font = { italic: true, color: { argb: 'FF888888' } };
+                });
+            }
         });
     });
+
+    // 4. Add a summary table for uncharged job codes (across all departments)
+    const allJobCodes = await prisma.jobCode.findMany();
+    const chargedJobCodes = new Set(tasks.map(t => t.jobCode));
+    const unchargedJobCodes = allJobCodes.filter(job => !chargedJobCodes.has(job.jobCode));
+
+    if (unchargedJobCodes.length > 0) {
+        tableIndex++;
+        const unchargedData = unchargedJobCodes.map(job => ({
+            code: job.jobCode,
+            desc: jobMap.get(`${job.department}_${job.jobCode}`) || 
+                  (depts.find(d => d.id === job.department)?.name + " - " + job.jobCode + " (No description)"), // Fallback description
+            dept: job.department,
+            totalTime: 0,
+            users: new Set(),
+            dates: new Set()
+        }));
+        drawTable(`${tableIndex}. CÁC JOB CODE CHƯA CÓ NHÂN VIÊN THỰC HIỆN`, unchargedData, 'FF808080', true); // Grey color for uncharged jobs
+    }
 
     return { workbook, filename: `BAOCAO_JOBCODE_THANG_${month}_NAM_${year}.xlsx` };
   }
