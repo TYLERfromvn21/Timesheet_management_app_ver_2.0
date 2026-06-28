@@ -113,17 +113,19 @@ export const ReportService = {
                     job_static: t.static_desc,
                     desc: t.user_descs.join('\n'),
                     time_range: t.time_ranges.join('\n'),
-                    hours: t.total_hours.toFixed(2),
+                    hours: Number(t.total_hours.toFixed(2)),
                     job_count: (index === 0) ? finalDailyTasks.length : ''
                 });
 
                 row.getCell('desc').alignment = { vertical: 'middle', wrapText: true };
                 row.getCell('time_range').alignment = { vertical: 'middle', wrapText: true };
                 row.getCell('job_static').alignment = { vertical: 'middle', wrapText: true };
+                row.getCell('hours').numFmt = '0.00';
 
                 if(index === 0) {
                     row.getCell('job_count').font = { bold: true, color: { argb: 'FF0000FF' } };
                     row.getCell('job_count').alignment = { horizontal: 'center', vertical: 'top' };
+                    row.getCell('job_count').numFmt = '0';
                 }
             });
         } else {
@@ -136,6 +138,8 @@ export const ReportService = {
                 cell.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; 
                 cell.font = { color: { argb: 'FF888888' }, italic: true };
             });
+            row.getCell('hours').numFmt = '0.00';
+            row.getCell('job_count').numFmt = '0';
         }
     }
 
@@ -258,13 +262,15 @@ export const ReportService = {
         } else {
             data.forEach((item: any) => {
                 const r = summarySheet.getRow(currentRow++);
-                const vals = [item.code, item.desc, item.users.size, (item.totalTime / 3600000).toFixed(2)];
+                const vals = [item.code, item.desc, item.users.size, Number((item.totalTime / 3600000).toFixed(2))];
                 if (showDeptCol) {
                     const dName = depts.find(d => d.id === item.dept)?.name || item.dept;
                     vals.splice(2, 0, dName);
                 }
                 r.values = vals;
                 r.getCell(2).alignment = { wrapText: true };
+                r.getCell(showDeptCol ? 4 : 3).numFmt = '0';
+                r.getCell(showDeptCol ? 5 : 4).numFmt = '0.00';
             });
         }
         currentRow += 2; 
@@ -333,9 +339,10 @@ export const ReportService = {
                 desc: item.desc || '', 
                 user: user, 
                 dates: item.dates.sort().join(',\n'), // Join unique dates for display
-                time: (item.time / 3600000).toFixed(2) 
+                time: Number((item.time / 3600000).toFixed(2))
             });
             row.getCell('dates').alignment = { vertical: 'middle', wrapText: true };
+            row.getCell('time').numFmt = '0.00';
         });
 
         // Handle uncharged job codes for this department in the detailed sheet
@@ -355,10 +362,11 @@ export const ReportService = {
                     desc: jobMap.get(`${job.department}_${job.jobCode}`) || '',
                     user: '(No employees assigned)', // English comment
                     dates: '(No dates recorded)', // English comment
-                    time: '0.00'
+                    time: 0
                 }).eachCell(cell => {
                     cell.font = { italic: true, color: { argb: 'FF888888' } };
                 });
+                sheet.getCell(`E${sheet.rowCount}`).numFmt = '0.00';
             }
         });
     });
