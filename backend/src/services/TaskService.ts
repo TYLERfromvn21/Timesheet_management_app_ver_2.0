@@ -24,18 +24,14 @@ export const TaskService = {
     });
 
     return tasks.map(t => {
-      const localOffset = t.startTime.getTimezoneOffset() * 60 * 1000;
-      const adjustedStart = new Date(t.startTime.getTime() - localOffset - VIETNAM_OFFSET_MS);
-      const adjustedEnd = new Date(t.endTime.getTime() - localOffset - VIETNAM_OFFSET_MS);
-      
       return {
         id: t.id,
         task_id: t.id,
         department: t.department,
         job_code: t.jobCode,
         task_description: t.taskDescription,
-        start_time: adjustedStart.toISOString(),
-        end_time: adjustedEnd.toISOString(),
+        start_time: t.startTime.toISOString(),
+        end_time: t.endTime.toISOString(),
         date: t.date.toISOString()
       };
     });
@@ -54,9 +50,8 @@ export const TaskService = {
     }
 
     const taskDate = data.date ? new Date(data.date) : new Date(startDateTime);
-    const localOffset = startDateTime.getTimezoneOffset() * 60 * 1000;
-    const adjustedStart = new Date(startDateTime.getTime() + localOffset + VIETNAM_OFFSET_MS);
-    const adjustedEnd = new Date(endDateTime.getTime() + localOffset + VIETNAM_OFFSET_MS);
+    const adjustedStart = startDateTime;
+    const adjustedEnd = endDateTime;
 
     // use transaction for save operation
     return await prisma.$transaction(async (tx) => {
