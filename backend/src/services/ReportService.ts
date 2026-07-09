@@ -12,18 +12,23 @@ type ReportRequester = {
 
 const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
 
-const toVietnamWallTime = (value: Date) => {
-  const localOffset = value.getTimezoneOffset() * 60 * 1000;
-  return new Date(value.getTime() - localOffset - VIETNAM_OFFSET_MS);
-};
+// Convert an absolute Date (ISO/UTC) to Vietnam wall-time components safely
+// without relying on Node's Intl/timeZone support (which may be missing on Render).
+// We add the VN offset to the UTC timestamp and then read the UTC hours/minutes
+// from the shifted date which yields VN local time regardless of server locale.
+const toVietnamTime = (value: Date) => new Date(value.getTime() + VIETNAM_OFFSET_MS);
 
-const formatAmPm = (value: Date) =>
-  value.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Ho_Chi_Minh'
-  });
+const formatAmPm = (value: Date) => {
+  if (!value) return '';
+  const vn = toVietnamTime(value);
+  const hours = vn.getUTCHours();
+  const minutes = vn.getUTCMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = ((hours + 11) % 12) + 1; // convert 0..23 to 1..12
+  const hh = String(hour12).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  return `${hh}:${mm} ${ampm}`;
+};
 
 const isRequesterAllowedForDept = (requester: ReportRequester | null | undefined, deptId: string) => {
   if (!requester || requester.role === 'admin_total') return true;
