@@ -14,6 +14,7 @@ import userRoutes from './routes/userRoutes';
 import jobCodeRoutes from './routes/jobCodeRoutes'; 
 import taskRoutes from './routes/taskRoutes';       
 import reportRoutes from './routes/reportRoutes';
+import declarationRoutes from './routes/declarationRoutes';
 
 const app: Express = express();
 
@@ -57,6 +58,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/job-codes', jobCodeRoutes); 
 app.use('/api/tasks', taskRoutes);      
 app.use('/api/reports', reportRoutes);
+app.use('/api/declarations', declarationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

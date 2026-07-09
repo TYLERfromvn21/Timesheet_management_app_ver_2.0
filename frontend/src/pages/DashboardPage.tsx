@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTaskStore } from '../store/taskStore';
 import { useUserStore } from '../store/userStore';
-import apiClient from '../services/api.client';
+import { declarationService } from '../services/declaration.service';
+import type { Task } from '../types/task.types';
 
 
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
@@ -16,9 +17,19 @@ import { DepartmentManagement } from '../components/admin/DepartmentManagement';
 import { ReportGenerator } from '../components/reports/ReportGenerator';
 import { TaskForm } from '../components/timesheet/TaskForm';
 import { JobCodeManagementModal } from '../components/admin/JobCodeManagementModal';
+import { DeclarationManagementModal } from '../components/dashboard/DeclarationManagementModal';
+import { OldDeclarationModal } from '../components/timesheet/OldDeclarationModal';
+import type { DeclarationConfig } from '../types/declaration.types';
 
 import '../styles/dashboard.css';
 import '../styles/dashboard-mobile.css';
+
+const toDateInputValue = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 export default function DashboardPage() {
     const { user, checkAuth } = useAuthStore();
@@ -26,12 +37,17 @@ export default function DashboardPage() {
     const { fetchDepartments } = useUserStore(); 
 
     const [modalTaskOpen, setModalTaskOpen] = useState(false);
-    const [editTask, setEditTask] = useState<any>(null);
+    const [editTask, setEditTask] = useState<Task | null>(null);
     const [modalReportType, setModalReportType] = useState<'USER' | 'JOB' | null>(null);
     const [modalDeptOpen, setModalDeptOpen] = useState(false);
     const [modalJobCodeOpen, setModalJobCodeOpen] = useState(false);
+    const [modalDeclarationOpen, setModalDeclarationOpen] = useState(false);
+    const [oldDeclarationOpen, setOldDeclarationOpen] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
-    const [deadlineDate, setDeadlineDate] = useState<string | null>(null);
+    const [declarationConfig, setDeclarationConfig] = useState<DeclarationConfig | null>(null);
+    const todayValue = toDateInputValue(new Date());
+    const isDeclarationLocked = declarationConfig?.mode === 'LOCKED';
+    const isDeclarationOpenDate = declarationConfig?.mode === 'OPEN_DATE';
 
     //function to initialize dashboard data on component mount
     useEffect(() => {
@@ -62,20 +78,19 @@ export default function DashboardPage() {
         if (user) fetchTasks(user.id);
     }, [selectedDate, user]); 
 
-    //function to fetch deadline date from backend
     useEffect(() => {
-        const fetchDeadline = async () => {
+        const fetchDeclarationConfig = async () => {
             try {
-                // const response = await fetch('http://localhost:3000/api/config/deadline');
-                // const data = await response.json();
-                // setDeadlineDate(data.deadlineDate);
-                const response = await apiClient.get('/config/deadline');
-                setDeadlineDate(response.data.deadlineDate);
+                const config = await declarationService.getCurrent();
+                setDeclarationConfig(config);
+                if (config.mode === 'OPEN_DATE' && config.specificDate) {
+                    setDate(new Date(`${config.specificDate}T00:00:00Z`));
+                }
             } catch (error) {
-                console.error('Error fetching deadline:', error);
+                console.error('Error fetching declaration config:', error);
             }
         };
-        fetchDeadline();
+        fetchDeclarationConfig();
     }, []);
 
     if (isInitialLoading || !user) return <div className="loading">Đang tải dữ liệu...</div>;
@@ -93,10 +108,16 @@ export default function DashboardPage() {
                     <div className="date-nav">
                         <input 
                             type="date" 
-                            value={selectedDate && !isNaN(selectedDate.getTime()) ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} 
+                            min={(isDeclarationLocked || isDeclarationOpenDate) ? todayValue : undefined}
+                            value={selectedDate && !isNaN(selectedDate.getTime()) ? toDateInputValue(selectedDate) : todayValue} 
                             onChange={(e) => {
-                                if (e.target.value) { 
-                                    setDate(new Date(e.target.value));
+                                if (!e.target.value) return;
+                                if ((isDeclarationLocked || isDeclarationOpenDate) && e.target.value < todayValue) return;
+                                setDate(new Date(`${e.target.value}T00:00:00Z`));
+                            }}
+                            onKeyDown={(e) => {
+                                if (isDeclarationLocked && e.key === 'Backspace') {
+                                    e.preventDefault();
                                 }
                             }}
                             style={{ 
@@ -108,38 +129,28 @@ export default function DashboardPage() {
                             }}
                         />
 
-                         {deadlineDate && (
-                <div style={{
-                    background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
-                    border: '2px solid #ff9800',
-                    borderRadius: '4px',
-                    padding: '7px 15px',
-                    margin: '15px auto',
-                    maxWidth: '1200px',
-                    boxShadow: '0 2px 8px rgba(255, 152, 0, 0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    color: '#e65100'
-                }}>
-                    <span style={{ fontSize: '1.0rem' }}>Deadline</span>
-                    <span>
-                        Khai báo bổ sung cho tháng 1-4/2026: <strong>{new Date(deadlineDate).toLocaleDateString('vi-VN')}</strong>
-                    </span>
-                </div>
-            )}
                     </div>
                     
                     <div className="task-list" style={{ position: 'relative', minHeight: '300px' }}>
                         <TimelineView tasks={tasks} onTaskClick={(t) => { setEditTask(t); setModalTaskOpen(true); }}/>
                     </div>
-                    <button className="btn-add" onClick={() => { setEditTask(null); setModalTaskOpen(true); }}>+ Khai báo công việc</button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button className="btn-add" onClick={() => { setEditTask(null); setModalTaskOpen(true); }}>+ Khai báo công việc</button>
+                        {declarationConfig && declarationConfig.mode !== 'LOCKED' && (
+                            <button className="btn-add" style={{ background: '#0069d9' }} onClick={() => setOldDeclarationOpen(true)}>
+                                Chỉnh sửa khai báo cũ
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {isAdmin && (
-                    <AdminPanel setModalReportType={setModalReportType} setModalDeptOpen={setModalDeptOpen} setModalJobCodeOpen={setModalJobCodeOpen} />
+                    <AdminPanel
+                        setModalReportType={setModalReportType}
+                        setModalDeptOpen={setModalDeptOpen}
+                        setModalJobCodeOpen={setModalJobCodeOpen}
+                        setModalDeclarationOpen={setModalDeclarationOpen}
+                    />
                 )}
             </div>
 
@@ -147,6 +158,19 @@ export default function DashboardPage() {
             {modalReportType && <ReportGenerator type={modalReportType} onClose={() => setModalReportType(null)} />}
             {modalDeptOpen && <DepartmentManagement onClose={() => setModalDeptOpen(false)} />}
             {modalJobCodeOpen && <JobCodeManagementModal isOpen={modalJobCodeOpen} onClose={() => setModalJobCodeOpen(false)} />}
+            {modalDeclarationOpen && (
+                <DeclarationManagementModal
+                    isOpen={modalDeclarationOpen}
+                    onClose={() => setModalDeclarationOpen(false)}
+                    onSaved={(config) => setDeclarationConfig(config)}
+                />
+            )}
+            {oldDeclarationOpen && (
+                <OldDeclarationModal
+                    isOpen={oldDeclarationOpen}
+                    onClose={() => setOldDeclarationOpen(false)}
+                />
+            )}
         </main>
     );
 }

@@ -4,17 +4,62 @@
 import prisma from '../config/prisma';
 import * as ExcelJS from 'exceljs';
 
+type ReportRequester = {
+  id: string;
+  role: 'admin_total' | 'admin_dept' | 'user';
+  departmentIds: string[];
+};
+
+const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+const toVietnamWallTime = (value: Date) => {
+  const localOffset = value.getTimezoneOffset() * 60 * 1000;
+  return new Date(value.getTime() - localOffset - VIETNAM_OFFSET_MS);
+};
+
+const formatAmPm = (value: Date) =>
+  value.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Ho_Chi_Minh'
+  });
+
+const isRequesterAllowedForDept = (requester: ReportRequester | null | undefined, deptId: string) => {
+  if (!requester || requester.role === 'admin_total') return true;
+  return requester.departmentIds.includes(deptId);
+};
+
+const isRequesterAllowedForUser = async (requester: ReportRequester | null | undefined, userId: string) => {
+  if (!requester || requester.role === 'admin_total') return true;
+
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      departments: {
+        select: { id: true }
+      }
+    }
+  });
+
+  if (!targetUser) throw new Error('User not found');
+  return targetUser.departments.some(d => requester.departmentIds.includes(d.id));
+};
+
 export const ReportService = {
   
   // ==========================================================================
   // 1. USER REPORT 
   // ==========================================================================
   //function to generate user report
-  generateUserReport: async (userId: string, month: number, year: number) => {
+  generateUserReport: async (userId: string, month: number, year: number, requester?: ReportRequester | null) => {
     // 1. take userId, month, year as input
     // output: ExcelJS.Workbook object representing the report
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new Error("User not found");
+
+    const isAllowed = await isRequesterAllowedForUser(requester, userId);
+    if (!isAllowed) throw new Error('FORBIDDEN: You do not have permission to view this user report');
 
     // 2. calculate date range
     const startDate = new Date(year, month - 1, 1);
@@ -71,19 +116,12 @@ export const ReportService = {
         if (rawDailyTasks.length > 0) {
             // logic to merge tasks by job code
             const mergedTasks: any = {};
-            // Adjust for Vietnam timezone (UTC+7)
-            const vietnamOffset = 7 * 60 * 60 * 1000;
             rawDailyTasks.forEach(t => {
                 const code = t.jobCode;
                 const duration = (t.endTime.getTime() - t.startTime.getTime()) / 3600000;
-                
-                // Adjust times for Vietnam timezone
-                const localOffset = t.startTime.getTimezoneOffset() * 60 * 1000;
-                const adjustedStart = new Date(t.startTime.getTime() - localOffset - vietnamOffset);
-                const adjustedEnd = new Date(t.endTime.getTime() - localOffset - vietnamOffset);
-                
-                const startStr = adjustedStart.toISOString().split('T')[1].substr(0,5);
-                const endStr = adjustedEnd.toISOString().split('T')[1].substr(0,5);
+
+                const startStr = formatAmPm(t.startTime);
+                const endStr = formatAmPm(t.endTime);
                 const timeStr = `${startStr}-${endStr}`;
                 
                 if (!mergedTasks[code]) {
@@ -168,13 +206,18 @@ export const ReportService = {
   // 2. JOB REPORT 
   // ==========================================================================
   //function to generate job report
-  generateJobReport: async (month: number, year: number) => {
+  generateJobReport: async (month: number, year: number, jobCode?: string, requester?: ReportRequester | null) => {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
 
     // 1.take all tasks in that month from DB
     const tasks = await prisma.task.findMany({
-      where: { date: { gte: startDate, lte: endDate } }
+      where: {
+        date: { gte: startDate, lte: endDate },
+        ...(requester && requester.role === 'admin_dept'
+          ? { department: { in: requester.departmentIds } }
+          : {})
+      }
     });
     
     // Map User (userId -> username)
@@ -190,6 +233,128 @@ export const ReportService = {
     // take all departments
     const depts = await prisma.department.findMany({ orderBy: { name: 'asc' } });
 
+    const scopedDepts = requester && requester.role === 'admin_dept'
+      ? depts.filter(d => requester.departmentIds.includes(d.id))
+      : depts;
+
+    if (jobCode) {
+      const targetJob = jobs.find(j => j.jobCode === jobCode);
+      if (!targetJob) throw new Error('Job code not found');
+      if (!isRequesterAllowedForDept(requester, targetJob.department)) {
+        throw new Error('FORBIDDEN: You do not have permission to view this job report');
+      }
+
+      const tasks = await prisma.task.findMany({
+        where: {
+          jobCode,
+          department: targetJob.department,
+          date: { gte: startDate, lte: endDate }
+        },
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }]
+      });
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Chi tiết jobcode');
+
+      sheet.columns = [
+        { header: 'Nhân viên', key: 'username', width: 30, style: { alignment: { vertical: 'middle', wrapText: true } } },
+        { header: 'Số đầu việc', key: 'taskCount', width: 12, style: { alignment: { horizontal: 'center', vertical: 'middle' } } },
+        { header: 'Tổng giờ', key: 'hours', width: 12, style: { alignment: { horizontal: 'right', vertical: 'middle' } } },
+        { header: 'Thời gian làm', key: 'timeRanges', width: 32, style: { alignment: { vertical: 'middle', wrapText: true } } }
+      ];
+      sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0069D9' } };
+      sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+
+      // Create a single merged info cell spanning the data columns so long texts
+      // (phòng ban / mô tả) display fully. Use new lines inside the cell and enable wrap.
+      const infoText = [
+        `Jobcode: ${jobCode}`,
+        `Phòng ban: ${depts.find(d => d.id === targetJob.department)?.name || targetJob.department}`,
+        `Mô tả: ${targetJob.taskDescription || ''}`
+      ].join('\n');
+      // Add the info row as an explicit 4-column row and merge it.
+      const infoRow = sheet.addRow([infoText, '', '', '']);
+      sheet.mergeCells(`A${infoRow.number}:D${infoRow.number}`);
+      const mergedCell = sheet.getCell(`A${infoRow.number}`);
+      mergedCell.font = { bold: true };
+      mergedCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+      infoRow.height = Math.max(45, infoText.split('\n').length * 24);
+      sheet.getColumn(1).width = 60;
+      sheet.getColumn(2).width = 18;
+      sheet.getColumn(3).width = 18;
+      sheet.getColumn(4).width = 70;
+      sheet.addRow([]);
+
+      const employeeMap = new Map<string, { username: string; hours: number; taskCount: number; timeRanges: string[] }>();
+      tasks.forEach(task => {
+        const username = userMap.get(task.userId) || 'Unknown';
+        const current = employeeMap.get(task.userId) || { username, hours: 0, taskCount: 0, timeRanges: [] };
+        current.hours += (task.endTime.getTime() - task.startTime.getTime()) / 3600000;
+        current.taskCount += 1;
+        current.timeRanges.push(`${formatAmPm(task.startTime)} - ${formatAmPm(task.endTime)}`);
+        employeeMap.set(task.userId, current);
+      });
+
+      if (employeeMap.size === 0) {
+        const emptyRow = sheet.addRow(['(Không có dữ liệu)', '', '', '']);
+        emptyRow.font = { italic: true, color: { argb: 'FF888888' } };
+      } else {
+        Array.from(employeeMap.values())
+          .sort((a, b) => b.hours - a.hours || a.username.localeCompare(b.username))
+          .forEach(item => {
+            const row = sheet.addRow({
+              username: item.username,
+              taskCount: item.taskCount,
+              hours: Number(item.hours.toFixed(2)),
+              timeRanges: item.timeRanges.join('\n')
+            });
+            row.getCell('taskCount').numFmt = '0';
+            row.getCell('taskCount').alignment = { horizontal: 'center', vertical: 'middle' };
+            row.getCell('hours').numFmt = '0.00';
+            row.getCell('hours').alignment = { horizontal: 'right', vertical: 'middle' };
+            row.getCell('username').alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+            row.getCell('timeRanges').alignment = { vertical: 'middle', wrapText: true };
+          });
+      }
+
+      const totalHours = tasks.reduce(
+        (sum, task) => sum + ((task.endTime.getTime() - task.startTime.getTime()) / 3600000),
+        0
+      );
+      const summaryRow = sheet.addRow(['Tổng giờ của toàn bộ jobcode', '', Number(totalHours.toFixed(2)), '']);
+      summaryRow.font = { bold: true };
+      summaryRow.getCell('A').alignment = { horizontal: 'left', vertical: 'middle' };
+      summaryRow.getCell('C').numFmt = '0.00';
+      summaryRow.getCell('C').alignment = { horizontal: 'right', vertical: 'middle' };
+
+      // Auto-size columns based on max content length and enable wrapping
+      sheet.columns.forEach(col => {
+        let maxLength = 10;
+        col.eachCell({ includeEmpty: true }, (cell) => {
+          // normalize cell value to string
+          const v = cell.value;
+          let text = '';
+          if (v === null || v === undefined) text = '';
+          else if (typeof v === 'string') text = v;
+          else if (typeof v === 'number') text = v.toString();
+          else if ((v as any).richText) text = (v as any).richText.map((r:any) => r.text).join('');
+          else text = String(v);
+
+          // consider longest line when value has newlines
+          const len = Math.max(...text.split(/\r?\n/).map(l => l.length));
+          if (len > maxLength) maxLength = len;
+
+          // ensure wrapping enabled for all cells
+          cell.alignment = Object.assign({}, cell.alignment, { wrapText: true, vertical: 'middle' });
+        });
+        // set reasonable bounds for width
+        col.width = Math.min(Math.max(Math.ceil(maxLength * 1.2), 10), 100);
+      });
+
+      return { workbook, filename: `BAOCAO_CHITIET_JOBCODE_${jobCode}_${month}_${year}.xlsx` };
+    }
+
     // 2. Initialize Excel Workbook
     const workbook = new ExcelJS.Workbook();
     const summarySheet = workbook.addWorksheet('TỔNG HỢP');
@@ -200,9 +365,11 @@ export const ReportService = {
     // function to process data for summary tables
     // function to process data for summary tables, including all job codes (charged or uncharged)
     const processData = (filterDeptId: string | null) => {
-        const allJobCodesInScope = jobs.filter(j => 
+        const allJobCodesInScope = jobs.filter(j =>
             filterDeptId ? j.department === filterDeptId : true
-        );
+        ).filter(job => requester && requester.role === 'admin_dept'
+            ? requester.departmentIds.includes(job.department)
+            : true);
 
         const map: any = {};
         
@@ -280,10 +447,15 @@ export const ReportService = {
     summarySheet.columns = [{width:15}, {width:40}, {width:20}, {width:15}, {width:20}];
     
     // create summary tables
-    drawTable('1. TỔNG HỢP TOÀN CÔNG TY', processData(null), 'FF000000', true);
+    const includeCompanySummary = !(requester && requester.role === 'admin_dept');
+    let tableIndex = 1;
 
-    let tableIndex = 2;
-    depts.forEach((d, idx) => {
+    if (includeCompanySummary) {
+        drawTable('1. TỔNG HỢP TOÀN CÔNG TY', processData(null), 'FF000000', true);
+        tableIndex = 2;
+    }
+
+    scopedDepts.forEach((d, idx) => {
         const color = colors[idx % colors.length];
         const deptData = processData(d.id);
         drawTable(`${tableIndex}. PHÒNG ${d.name}`, deptData, color, false);
@@ -291,7 +463,7 @@ export const ReportService = {
     });
 
     // 3. create detailed sheets per department
-    depts.forEach((d, idx) => {
+    scopedDepts.forEach((d, idx) => {
         const color = colors[idx % colors.length];
         const sheetName = d.name.substring(0, 30); 
         const sheet = workbook.addWorksheet(sheetName);
@@ -372,7 +544,9 @@ export const ReportService = {
     });
 
     // 4. Add a summary table for uncharged job codes (across all departments)
-    const allJobCodes = await prisma.jobCode.findMany();
+    const allJobCodes = scopedDepts.length > 0
+      ? jobs.filter(job => scopedDepts.some(d => d.id === job.department))
+      : jobs;
     const chargedJobCodes = new Set(tasks.map(t => t.jobCode));
     const unchargedJobCodes = allJobCodes.filter(job => !chargedJobCodes.has(job.jobCode));
 
@@ -390,6 +564,10 @@ export const ReportService = {
         drawTable(`${tableIndex}. CÁC JOB CODE CHƯA CÓ NHÂN VIÊN THỰC HIỆN`, unchargedData, 'FF808080', true); // Grey color for uncharged jobs
     }
 
-    return { workbook, filename: `BAOCAO_JOBCODE_THANG_${month}_NAM_${year}.xlsx` };
+    const departmentSuffix = requester && requester.role === 'admin_dept'
+      ? '_' + scopedDepts.map(d => d.name.replace(/\s+/g, '_')).join('_')
+      : '';
+
+    return { workbook, filename: `BAOCAO_JOBCODE_THANG_${month}_NAM_${year}${departmentSuffix}.xlsx` };
   }
 };

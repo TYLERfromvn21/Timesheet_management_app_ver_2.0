@@ -15,9 +15,9 @@ model User {
   username      String       @unique
   password      String
   role          UserRole
-  
+  isUnlocked    Boolean?
   departments   Department[] @relation("NewRelation") 
-
+  departmentId  String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   deletedAt     DateTime?
@@ -59,9 +59,24 @@ model Task {
   userId          String
 }
 
+model DeclarationSetting {
+  id            Int              @id @default(1)
+  mode          DeclarationMode  @default(LOCKED)
+  specificDate  DateTime?
+  updatedBy     String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
 // --- 3. Enums ---
 enum UserRole {
   ADMIN_TOTAL
   ADMIN_DEPT
   USER
+}
+
+enum DeclarationMode {
+  LOCKED
+  OPEN_ALL
+  OPEN_DATE
 }

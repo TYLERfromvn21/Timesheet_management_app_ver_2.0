@@ -15,9 +15,10 @@ interface Props {
     onClose: () => void;
     editTask?: any; 
     date: Date;
+    onSaved?: () => void | Promise<void>;
 }
 
-export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) => {
+export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date, onSaved }) => {
     const { user } = useAuthStore();
     const { jobCodes, saveTask, fetchJobCodes, deleteTask, tasks } = useTaskStore();
     const { departments, fetchDepartments } = useUserStore();
@@ -147,6 +148,7 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
             };
 
             await saveTask(payload);
+            if (onSaved) await onSaved();
             onClose(); 
         } catch (error: any) {
             alert(error.response?.data?.error || error.message || "Lỗi lưu task");
@@ -160,6 +162,7 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date }) =
         if (!confirm("Bạn muốn xóa task này?")) return;
         try {
             await deleteTask(editTask.task_id, user!.id);
+            if (onSaved) await onSaved();
             onClose();
         } catch (e) { alert("Lỗi xóa task"); }
     };

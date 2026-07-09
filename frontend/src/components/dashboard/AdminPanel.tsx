@@ -13,12 +13,14 @@ interface AdminPanelProps {
     setModalReportType: (type: 'USER' | 'JOB' | null) => void;
     setModalDeptOpen: (isOpen: boolean) => void;
     setModalJobCodeOpen: (isOpen: boolean) => void;
+    setModalDeclarationOpen: (isOpen: boolean) => void;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setModalDeptOpen, setModalJobCodeOpen }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setModalDeptOpen, setModalJobCodeOpen, setModalDeclarationOpen }) => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const isTotalAdmin = user?.role === 'admin_total';
+    const canViewReports = user?.role === 'admin_total' || user?.role === 'admin_dept';
 
     // Render the admin panel with job code management and report generation options
     return (
@@ -33,8 +35,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ setModalReportType, setM
                     Xem & Quản lý Jobcode
                 </button>
             </div>
-            
+
             {isTotalAdmin && (
+                <div className="job-code-control" style={{marginTop: '15px'}}>
+                    <label><strong>QUẢN LÝ KHAI BÁO</strong></label>
+                    <button className="btn-action" style={{background:'#b22222'}} onClick={() => setModalDeclarationOpen(true)}>
+                        Quản lý khai báo
+                    </button>
+                </div>
+            )}
+            
+            {canViewReports && (
                 <div className="report-control">
                     <label><strong>XUẤT BÁO CÁO</strong></label>
                     <div style={{display:'flex', gap:'5px'}}>

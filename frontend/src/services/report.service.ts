@@ -12,9 +12,9 @@ export const reportService = {
   },
 
   //function to download job report as a blob
-  downloadJobReport: async (month: number, year: number) => {
+  downloadJobReport: async (month: number, year: number, jobCode?: string) => {
     return apiClient.get('/reports/job-report', {
-      params: { month, year },
+      params: { month, year, jobCode },
       responseType: 'blob'
     });
   }

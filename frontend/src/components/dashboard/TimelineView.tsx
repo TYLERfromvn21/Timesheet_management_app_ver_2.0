@@ -14,11 +14,13 @@ interface Props {
 
 export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick }) => {
     
-    // Format time as HH:MM
+    // Format time with AM/PM so the dashboard matches the declaration UI
     const formatTime = (date: Date) => {
-        const h = date.getHours().toString().padStart(2, '0');
-        const m = date.getMinutes().toString().padStart(2, '0');
-        return `${h}:${m}`;
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
     };
 
     // function to render time slots from 6 AM to 10 PM
@@ -28,7 +30,10 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
             slots.push(
                 <div key={i} className="time-slot">
                     <span className="time-label" style={{ color: '#222', fontWeight: '600' }}>
-                        {i}:00
+                        {new Date(0, 0, 0, i).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            hour12: true
+                        })}
                     </span>
                 </div>
             );
@@ -42,8 +47,10 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
         const sortedTasks = [...tasks].sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
         
         // Track vertical offset for consecutive short tasks
-        let shortTaskStackOffset = 0;
-        let lastTaskEnd = 0;
+        const layoutState = {
+            shortTaskStackOffset: 0,
+            lastTaskEnd: 0
+        };
 
         return sortedTasks.map(t => {
             if (!t.start_time || !t.end_time) return null;
@@ -68,21 +75,21 @@ export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick })
                 const currentStart = startPos;
                 
                 // Reset stack offset if there's a gap between tasks (more than 5 minutes)
-                if (currentStart > lastTaskEnd + 0.083) {
-                    shortTaskStackOffset = 0;
+                if (currentStart > layoutState.lastTaskEnd + 0.083) {
+                    layoutState.shortTaskStackOffset = 0;
                 }
                 
-                displayTop = (currentStart * 50) + shortTaskStackOffset;
+                displayTop = (currentStart * 50) + layoutState.shortTaskStackOffset;
                 displayHeight = Math.max(duration * 50, 60); // Minimum 60px height for short tasks
-                lastTaskEnd = currentStart + duration;
-                shortTaskStackOffset += displayHeight + 5; // Stack below with 5px gap
+                layoutState.lastTaskEnd = currentStart + duration;
+                layoutState.shortTaskStackOffset += displayHeight + 5; // Stack below with 5px gap
             } else {
                 // Normal task positioning
                 displayTop = startPos < 0 ? 0 : startPos * 50;
                 const realDuration = startPos < 0 ? duration + startPos : duration;
                 displayHeight = realDuration * 50;
-                shortTaskStackOffset = 0; // Reset stack offset for normal tasks
-                lastTaskEnd = startPos + duration;
+                layoutState.shortTaskStackOffset = 0; // Reset stack offset for normal tasks
+                layoutState.lastTaskEnd = startPos + duration;
             }
 
             if (displayHeight <= 0) return null;
