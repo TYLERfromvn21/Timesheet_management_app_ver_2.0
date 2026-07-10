@@ -107,9 +107,9 @@ export const ReportService = {
                 const code = t.jobCode;
                 const duration = (t.endTime.getTime() - t.startTime.getTime()) / 3600000;
                 
-                // Adjust times for Vietnam timezone
-                const startStr = t.startTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
-                const endStr = t.endTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
+                // Adjust times for Vietnam timezone with AM/PM format
+                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
                 // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
                 const timeStr = `${startStr} - ${endStr}`; 
 
@@ -277,19 +277,15 @@ export const ReportService = {
       sheet.addRow([]);
 
       const employeeMap = new Map<string, { username: string; hours: number; taskCount: number; timeRanges: string[] }>();
-      const vietnamOffset = 7 * 60 * 60 * 1000;
       tasks.forEach(task => {
         const username = userMap.get(task.userId) || 'Unknown';
         const current = employeeMap.get(task.userId) || { username, hours: 0, taskCount: 0, timeRanges: [] };
         current.hours += (task.endTime.getTime() - task.startTime.getTime()) / 3600000;
         current.taskCount += 1;
         
-        // Adjust times for Vietnam timezone using the working method
-        const localOffset = task.startTime.getTimezoneOffset() * 60 * 1000;
-        const adjustedStart = new Date(task.startTime.getTime() - localOffset - vietnamOffset);
-        const adjustedEnd = new Date(task.endTime.getTime() - localOffset - vietnamOffset);
-        const startStr = adjustedStart.toISOString().split('T')[1].substr(0,5);
-        const endStr = adjustedEnd.toISOString().split('T')[1].substr(0,5);
+        // Adjust times for Vietnam timezone with AM/PM format
+        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+        const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
         
         current.timeRanges.push(`${startStr} - ${endStr}`);
         employeeMap.set(task.userId, current);
