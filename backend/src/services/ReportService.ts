@@ -10,21 +10,6 @@ type ReportRequester = {
   departmentIds: string[];
 };
 
-const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
-
-const toVietnamTime = (value: Date) => new Date(value.getTime() + VIETNAM_OFFSET_MS);
-
-const formatAmPm = (value: Date) => {
-  if (!value) return '';
-  const vn = toVietnamTime(value);
-  const hours = vn.getUTCHours();
-  const minutes = vn.getUTCMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  const hour12 = ((hours + 11) % 12) + 1;
-  const hh = String(hour12).padStart(2, '0');
-  const mm = String(minutes).padStart(2, '0');
-  return `${hh}:${mm} ${ampm}`;
-};
 
 const isRequesterAllowedForDept = (requester: ReportRequester | null | undefined, deptId: string) => {
   if (!requester || requester.role === 'admin_total') return true;
@@ -110,21 +95,25 @@ export const ReportService = {
         const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         
         const rawDailyTasks = tasks.filter(t => {
-            const taskDateStr = t.date.toISOString().split('T')[0];
+            const taskDateStr = t.date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
             return taskDateStr === dayStr;
         });
 
         if (rawDailyTasks.length > 0) {
             // logic to merge tasks by job code
             const mergedTasks: any = {};
+            // Adjust for Vietnam timezone (UTC+7)
             rawDailyTasks.forEach(t => {
                 const code = t.jobCode;
                 const duration = (t.endTime.getTime() - t.startTime.getTime()) / 3600000;
-
-                const startStr = formatAmPm(t.startTime);
-                const endStr = formatAmPm(t.endTime);
-                const timeStr = `${startStr}-${endStr}`;
                 
+                // Adjust times for Vietnam timezone
+                const startStr = t.startTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
+                const endStr = t.endTime.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
+                // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
+                const timeStr = `${startStr} - ${endStr}`; 
+
+                // 2. Thêm lại câu lệnh if bị mất để đi cặp với dấu } bên dưới
                 if (!mergedTasks[code]) {
                     const staticDesc = jobMap.get(`${t.department}_${t.jobCode}`) || '';
                     mergedTasks[code] = { 
@@ -134,12 +123,12 @@ export const ReportService = {
                         total_hours: 0, 
                         time_ranges: [] 
                     };
-                }
+                } // Dấu ngoặc này bây giờ đã có 'if' để bắt cặp
+                
                 mergedTasks[code].total_hours += duration;
                 mergedTasks[code].time_ranges.push(timeStr);
                 if(t.taskDescription) mergedTasks[code].user_descs.push(t.taskDescription);
             });
-
             const finalDailyTasks = Object.values(mergedTasks) as any[];
             
             finalDailyTasks.forEach((t, index) => {
@@ -288,12 +277,21 @@ export const ReportService = {
       sheet.addRow([]);
 
       const employeeMap = new Map<string, { username: string; hours: number; taskCount: number; timeRanges: string[] }>();
+      const vietnamOffset = 7 * 60 * 60 * 1000;
       tasks.forEach(task => {
         const username = userMap.get(task.userId) || 'Unknown';
         const current = employeeMap.get(task.userId) || { username, hours: 0, taskCount: 0, timeRanges: [] };
         current.hours += (task.endTime.getTime() - task.startTime.getTime()) / 3600000;
         current.taskCount += 1;
-        current.timeRanges.push(`${formatAmPm(task.startTime)} - ${formatAmPm(task.endTime)}`);
+        
+        // Adjust times for Vietnam timezone using the working method
+        const localOffset = task.startTime.getTimezoneOffset() * 60 * 1000;
+        const adjustedStart = new Date(task.startTime.getTime() - localOffset - vietnamOffset);
+        const adjustedEnd = new Date(task.endTime.getTime() - localOffset - vietnamOffset);
+        const startStr = adjustedStart.toISOString().split('T')[1].substr(0,5);
+        const endStr = adjustedEnd.toISOString().split('T')[1].substr(0,5);
+        
+        current.timeRanges.push(`${startStr} - ${endStr}`);
         employeeMap.set(task.userId, current);
       });
 
