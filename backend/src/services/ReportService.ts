@@ -116,8 +116,8 @@ export const ReportService = {
                 // const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
                 // // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
                 // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database (Sẽ ra đúng AM/PM như lúc khai báo)
-                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
-                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
 
                 const timeStr = `${startStr} - ${endStr}`; 
 
@@ -296,8 +296,8 @@ export const ReportService = {
         //const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
         
         // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database
-        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
-        const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
 
         current.timeRanges.push(`${startStr} - ${endStr}`);
         employeeMap.set(task.userId, current);
