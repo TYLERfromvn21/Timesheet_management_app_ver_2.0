@@ -94,8 +94,12 @@ export const ReportService = {
         const dayDate = new Date(year, month - 1, d);
         const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         
+        // const rawDailyTasks = tasks.filter(t => {
+        //     const taskDateStr = t.date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+        //     return taskDateStr === dayStr;
+        // });
         const rawDailyTasks = tasks.filter(t => {
-            const taskDateStr = t.date.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+            const taskDateStr = t.date.toISOString().split('T')[0];
             return taskDateStr === dayStr;
         });
 
@@ -108,9 +112,13 @@ export const ReportService = {
                 const duration = (t.endTime.getTime() - t.startTime.getTime()) / 3600000;
                 
                 // Adjust times for Vietnam timezone with AM/PM format
-                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
-                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
-                // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
+                // const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+                // const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+                // // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
+                // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database (Sẽ ra đúng AM/PM như lúc khai báo)
+                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+
                 const timeStr = `${startStr} - ${endStr}`; 
 
                 // 2. Thêm lại câu lệnh if bị mất để đi cặp với dấu } bên dưới
@@ -284,9 +292,13 @@ export const ReportService = {
         current.taskCount += 1;
         
         // Adjust times for Vietnam timezone with AM/PM format
-        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
-        const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+        //const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+        //const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
         
+        // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database
+        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+        const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: true });
+
         current.timeRanges.push(`${startStr} - ${endStr}`);
         employeeMap.set(task.userId, current);
       });
@@ -389,8 +401,8 @@ export const ReportService = {
             const key = t.jobCode;
             const duration = t.endTime.getTime() - t.startTime.getTime();
             const userName = userMap.get(t.userId) || 'Unknown';
-            const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
-
+            //const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+            const taskDate = t.date.toISOString().split('T')[0]; // Format YYYY-MM-DD lấy từ gốc DB
             if (map[key]) { // Only update if the job code exists in allJobCodesInScope
                 map[key].totalTime += duration;
                 map[key].users.add(userName);
@@ -491,7 +503,8 @@ export const ReportService = {
             }
             detailMap[k].time += (t.endTime.getTime() - t.startTime.getTime());
             // Add unique date to the dates array
-            const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+            //const taskDate = t.date.toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+            const taskDate = t.date.toISOString().split('T')[0];
             if (!detailMap[k].dates.includes(taskDate)) {
                 detailMap[k].dates.push(taskDate);
             }
