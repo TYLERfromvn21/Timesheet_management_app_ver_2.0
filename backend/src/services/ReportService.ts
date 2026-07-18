@@ -87,6 +87,7 @@ export const ReportService = {
     let totalWorkedHours = 0;
     let totalIdleDays = 0;
     let totalJobCount = 0;
+    const uniqueJobCodesInMonth = new Set<string>();
     const daysInMonth = endDate.getDate();
 
     // 6. loop through each day of the month
@@ -116,8 +117,8 @@ export const ReportService = {
                 // const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
                 // // 1. Phải khai báo biến timeStr (bạn đang bị thiếu)
                 // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database (Sẽ ra đúng AM/PM như lúc khai báo)
-                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
-                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+                const startStr = t.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
+                const endStr = t.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
 
                 const timeStr = `${startStr} - ${endStr}`; 
 
@@ -142,6 +143,7 @@ export const ReportService = {
             finalDailyTasks.forEach((t, index) => {
                 totalWorkedHours += t.total_hours;
                 totalJobCount++; 
+                uniqueJobCodesInMonth.add(t.job_code);
 
                 const row = sheet.addRow({
                     date: dayDate.toLocaleDateString('en-CA'), // Format YYYY-MM-DD
@@ -194,7 +196,7 @@ export const ReportService = {
     addSummaryRow('TỔNG KẾT THÁNG:', '', 'FF000000');
     addSummaryRow('1. Tổng giờ làm việc thực tế:', `${totalWorkedHours.toFixed(2)} giờ`, 'FF008000');
     addSummaryRow('2. Tổng số ngày không làm:', `${totalIdleDays} ngày`, 'FFFF0000');
-    addSummaryRow('3. Tổng số đầu việc (Job) đã làm:', `${totalJobCount} job`, 'FF0000FF');
+    addSummaryRow('3. Tổng số đầu việc (Job) đã làm:', `${uniqueJobCodesInMonth.size} job`, 'FF0000FF');
 
     return { workbook, filename: `BAOCAO_USER_${user.username}_${month}_${year}.xlsx` };
   },
@@ -296,8 +298,8 @@ export const ReportService = {
         //const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
         
         // Ép chuẩn UTC để đọc trực tiếp con số mộc từ Database
-        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
-const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: true });
+        const startStr = task.startTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
+        const endStr = task.endTime.toLocaleTimeString('en-US', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false });
 
         current.timeRanges.push(`${startStr} - ${endStr}`);
         employeeMap.set(task.userId, current);

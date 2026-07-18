@@ -14,28 +14,26 @@ interface Props {
 
 export const TimelineView: React.FC<Props> = React.memo(({ tasks, onTaskClick }) => {
     
-    // Format time with AM/PM so the dashboard matches the declaration UI
-    // Format time with AM/PM so the dashboard matches the declaration UI
+    // Format time in 24h to keep the dashboard consistent with the input UI.
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('en-US', {
+        return date.toLocaleTimeString('en-GB', {
             timeZone: 'Asia/Ho_Chi_Minh', 
             hour: '2-digit',
             minute: '2-digit',
-            hour12: true
+            hour12: false
         });
     };
 
-    // function to render time slots from 6 AM to 10 PM
+    // function to render time slots from 06:00 to 22:00
     const renderTimeSlots = () => {
         const slots = []; 
         for (let i = 6; i <= 22; i++) {
-            const ampm = i >= 12 ? 'PM' : 'AM';
-            const displayHour = i > 12 ? i - 12 : i;
+            const displayHour = String(i).padStart(2, '0');
             
             slots.push(
                 <div key={i} className="time-slot">
                     <span className="time-label" style={{ color: '#222', fontWeight: '600' }}>
-                        {displayHour}:00 {ampm}
+                        {displayHour}:00
                     </span>
                 </div>
             );

@@ -34,13 +34,18 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date, onS
     const [todayJobHistory, setTodayJobHistory] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
 
+    const isValidTime24 = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value.trim());
+
     const getSafeTimeStr = (isoString: string) => {
         if (!isoString) return '08:00';
         try {
             const date = new Date(isoString);
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            return `${hours}:${minutes}`;
+            return date.toLocaleTimeString('en-GB', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
         } catch (e) { return '08:00'; }
     };
 
@@ -112,6 +117,9 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date, onS
     const handleSubmit = async () => {
         if (!formData.department) return alert("Vui lòng chọn Phòng ban");
         if (!formData.jobCode) return alert("Chưa chọn Mã Job (Vui lòng nhấn nút 'Chọn' trong bảng)");
+        if (!isValidTime24(formData.startTime) || !isValidTime24(formData.endTime)) {
+            return alert("Vui lòng nhập giờ theo định dạng 24h, ví dụ 13:00");
+        }
         if (formData.endTime <= formData.startTime) return alert("Giờ kết thúc phải lớn hơn giờ bắt đầu");
 
         setIsLoading(true);
@@ -247,11 +255,25 @@ export const TaskForm: React.FC<Props> = ({ isOpen, onClose, editTask, date, onS
                         <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                             <div className="form-group" style={{ flex: 1 }}>
                                 <label>Bắt đầu</label>
-                                <input type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}} />
+                                <input
+                                    type="text"
+                                    value={formData.startTime}
+                                    onChange={e => setFormData({...formData, startTime: e.target.value})}
+                                    placeholder="HH:mm"
+                                    inputMode="numeric"
+                                    style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}}
+                                />
                             </div>
                             <div className="form-group" style={{ flex: 1 }}>
                                 <label>Kết thúc</label>
-                                <input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}} />
+                                <input
+                                    type="text"
+                                    value={formData.endTime}
+                                    onChange={e => setFormData({...formData, endTime: e.target.value})}
+                                    placeholder="HH:mm"
+                                    inputMode="numeric"
+                                    style={{width:'100%', padding:'8px', border:'1px solid #ccc', borderRadius:'4px'}}
+                                />
                             </div>
                         </div>
                     </div>

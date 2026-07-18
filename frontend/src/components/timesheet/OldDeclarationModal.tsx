@@ -12,6 +12,13 @@ interface Props {
 }
 
 const toDateInputValue = (value: string) => value.slice(0, 10);
+const formatTime24 = (value: string) =>
+  new Date(value).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Ho_Chi_Minh'
+  });
 
 export const OldDeclarationModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const { user } = useAuthStore();
@@ -164,8 +171,7 @@ export const OldDeclarationModal: React.FC<Props> = ({ isOpen, onClose }) => {
                       <div style={{ fontWeight: 700 }}>{task.job_code}</div>
                       <div style={{ color: '#555', fontSize: '0.92rem' }}>{task.task_description}</div>
                       <div style={{ color: '#888', fontSize: '0.85rem' }}>
-                        {new Date(task.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} -{' '}
-                        {new Date(task.end_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        {formatTime24(task.start_time)} - {formatTime24(task.end_time)}
                       </div>
                     </div>
                     <button
